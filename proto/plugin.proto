@@ -1,0 +1,389 @@
+syntax = "proto3";
+
+package airgate.plugin.v1;
+
+option go_package = "github.com/DouDOU-start/airgate-sdk/proto";
+
+// ==================== 插件基础服务 ====================
+
+service PluginService {
+    rpc GetInfo(Empty) returns (PluginInfoResponse);
+    rpc Init(InitRequest) returns (Empty);
+    rpc Start(Empty) returns (Empty);
+    rpc Stop(Empty) returns (Empty);
+}
+
+// ==================== Simple 网关服务 ====================
+
+service SimpleGatewayService {
+    rpc GetPlatform(Empty) returns (StringResponse);
+    rpc GetModels(Empty) returns (ModelsResponse);
+    rpc GetRoutes(Empty) returns (RoutesResponse);
+    rpc Forward(ForwardRequest) returns (ForwardResult);
+    rpc ForwardStream(ForwardRequest) returns (stream ForwardChunk);
+    rpc ValidateCredentials(CredentialsRequest) returns (Empty);
+    // WebSocket 双向流（可选能力，核心通过路由声明检测插件是否支持）
+    rpc HandleWebSocket(stream WebSocketFrame) returns (stream WebSocketFrame);
+    // OAuth 授权（可选能力，核心通过类型断言检测插件是否支持）
+    rpc StartOAuth(StartOAuthRequest) returns (StartOAuthResponse);
+    rpc HandleOAuthCallback(OAuthCallbackRequest) returns (OAuthCallbackResponse);
+}
+
+// ==================== Advanced 网关服务 ====================
+
+service AdvancedGatewayService {
+    rpc GetPlatform(Empty) returns (StringResponse);
+    rpc GetModels(Empty) returns (ModelsResponse);
+    rpc GetAdvancedServiceNeeds(Empty) returns (AdvancedServiceNeedsResponse);
+    // HTTP 请求由核心代理到插件
+    rpc HandleRequest(HttpRequest) returns (HttpResponse);
+    rpc HandleStreamRequest(HttpRequest) returns (stream HttpResponseChunk);
+}
+
+// ==================== 支付服务 ====================
+
+service PaymentService {
+    rpc CreateOrder(CreateOrderRequest) returns (PaymentOrderResponse);
+    rpc QueryOrder(QueryOrderRequest) returns (PaymentOrderResponse);
+    rpc HandleCallback(HttpRequest) returns (HttpResponse);
+}
+
+// ==================== 扩展服务 ====================
+
+service ExtensionService {
+    rpc Migrate(Empty) returns (Empty);
+    rpc GetBackgroundTasks(Empty) returns (BackgroundTasksResponse);
+    // HTTP 请求由核心代理到插件
+    rpc HandleRequest(HttpRequest) returns (HttpResponse);
+    rpc HandleStreamRequest(HttpRequest) returns (stream HttpResponseChunk);
+}
+
+// ==================== 核心回调服务（插件 → 核心）====================
+
+service CoreCallbackService {
+    rpc SelectAccount(ScheduleRequest) returns (AccountResponse);
+    rpc SelectWithLoadAwareness(ScheduleRequest) returns (AccountSelectionResponse);
+    rpc ReportResult(ReportResultRequest) returns (Empty);
+    rpc AcquireSlot(SlotRequest) returns (SlotResponse);
+    rpc ReleaseSlot(SlotReleaseRequest) returns (Empty);
+    rpc CheckRateLimit(RateLimitRequest) returns (Empty);
+    rpc RecordUsage(UsageLogRequest) returns (Empty);
+    rpc DeductBalance(DeductRequest) returns (Empty);
+}
+
+// ==================== 通用消息 ====================
+
+message Empty {}
+
+message StringResponse {
+    string value = 1;
+}
+
+message ErrorResponse {
+    string message = 1;
+    int32  code = 2;
+}
+
+// ==================== 插件信息 ====================
+
+message PluginInfoResponse {
+    string id = 1;
+    string name = 2;
+    string version = 3;
+    string description = 4;
+    string author = 5;
+    string type = 6;
+    repeated ConfigFieldProto config_fields = 7;
+    repeated CredentialFieldProto credential_fields = 8;
+    repeated FrontendPageProto frontend_pages = 9;
+    repeated AccountTypeProto account_types = 10;
+}
+
+message ConfigFieldProto {
+    string key = 1;
+    string type = 2;
+    string default = 3;
+    string description = 4;
+    bool   required = 5;
+}
+
+message CredentialFieldProto {
+    string key = 1;
+    string label = 2;
+    string type = 3;
+    bool   required = 4;
+    string placeholder = 5;
+}
+
+message AccountTypeProto {
+    string key = 1;
+    string label = 2;
+    string description = 3;
+    repeated CredentialFieldProto fields = 4;
+}
+
+message FrontendPageProto {
+    string path = 1;
+    string title = 2;
+    string icon = 3;
+    string description = 4;
+}
+
+message InitRequest {
+    map<string, string> config = 1;
+    string log_level = 2;
+}
+
+// ==================== 网关消息 ====================
+
+message ModelInfoProto {
+    string id = 1;
+    string name = 2;
+    int32  max_tokens = 3;
+    double input_price = 4;
+    double output_price = 5;
+    double cache_price = 6;
+}
+
+message ModelsResponse {
+    repeated ModelInfoProto models = 1;
+}
+
+message RouteDefinitionProto {
+    string method = 1;
+    string path = 2;
+    string description = 3;
+}
+
+message RoutesResponse {
+    repeated RouteDefinitionProto routes = 1;
+}
+
+message ForwardRequest {
+    int64  account_id = 1;
+    bytes  credentials_json = 2;
+    string proxy_url = 3;
+    bytes  body = 4;
+    map<string, string> headers = 5;
+    string model = 6;
+    bool   stream = 7;
+    double rate_multiplier = 8;
+    int32  max_concurrency = 9;
+}
+
+message ForwardResult {
+    int32  status_code = 1;
+    int32  input_tokens = 2;
+    int32  output_tokens = 3;
+    int32  cache_tokens = 4;
+    string model = 5;
+    int64  duration_ms = 6;
+    bytes  response_body = 7;
+    map<string, string> response_headers = 8;
+}
+
+message ForwardChunk {
+    bytes data = 1;
+    bool  done = 2;
+    ForwardResult final_result = 3;
+}
+
+message CredentialsRequest {
+    map<string, string> credentials = 1;
+}
+
+message AdvancedServiceNeedsResponse {
+    bool need_scheduler = 1;
+    bool need_concurrency = 2;
+    bool need_rate_limit = 3;
+    bool need_billing = 4;
+}
+
+// ==================== HTTP 代理消息 ====================
+
+message HttpRequest {
+    string method = 1;
+    string path = 2;
+    string query = 3;
+    map<string, string> headers = 4;
+    bytes  body = 5;
+    string remote_addr = 6;
+}
+
+message HttpResponse {
+    int32  status_code = 1;
+    map<string, string> headers = 2;
+    bytes  body = 3;
+}
+
+message HttpResponseChunk {
+    bytes data = 1;
+    bool  done = 2;
+    int32 status_code = 3;
+    map<string, string> headers = 4;
+}
+
+// ==================== 支付消息 ====================
+
+message CreateOrderRequest {
+    int64  user_id = 1;
+    double amount = 2;
+    string channel = 3;
+}
+
+message PaymentOrderResponse {
+    string order_id = 1;
+    string pay_url = 2;
+    string status = 3;
+    double amount = 4;
+}
+
+message QueryOrderRequest {
+    string order_id = 1;
+}
+
+// ==================== 扩展消息 ====================
+
+message BackgroundTaskProto {
+    string name = 1;
+    int64  interval_ms = 2;
+}
+
+message BackgroundTasksResponse {
+    repeated BackgroundTaskProto tasks = 1;
+}
+
+// ==================== 核心回调消息 ====================
+
+message ScheduleRequest {
+    string platform = 1;
+    string model = 2;
+    int64  user_id = 3;
+    int64  group_id = 4;
+    string session_id = 5;
+}
+
+message AccountResponse {
+    int64  id = 1;
+    string name = 2;
+    string platform = 3;
+    bytes  credentials_json = 4;
+    string proxy_url = 5;
+    double rate_multiplier = 6;
+    int32  max_concurrency = 7;
+}
+
+message AccountSelectionResponse {
+    AccountResponse account = 1;
+    double load_rate = 2;
+}
+
+message ReportResultRequest {
+    int64 account_id = 1;
+    bool  success = 2;
+}
+
+message SlotRequest {
+    int64 account_id = 1;
+}
+
+message SlotResponse {
+    string slot_id = 1;
+}
+
+message SlotReleaseRequest {
+    string slot_id = 1;
+}
+
+message RateLimitRequest {
+    int64  user_id = 1;
+    string platform = 2;
+}
+
+message UsageLogRequest {
+    int64  user_id = 1;
+    int64  api_key_id = 2;
+    int64  account_id = 3;
+    int64  group_id = 4;
+    string platform = 5;
+    string model = 6;
+    int32  input_tokens = 7;
+    int32  output_tokens = 8;
+    int32  cache_tokens = 9;
+    double input_cost = 10;
+    double output_cost = 11;
+    double cache_cost = 12;
+    double total_cost = 13;
+    double actual_cost = 14;
+    bool   stream = 15;
+    int64  duration_ms = 16;
+    int64  first_token_ms = 17;
+    string user_agent = 18;
+    string ip_address = 19;
+}
+
+message DeductRequest {
+    int64  user_id = 1;
+    double amount = 2;
+}
+
+// ==================== OAuth 消息 ====================
+
+message StartOAuthRequest {
+    string callback_url = 1;
+    string proxy_url = 2;
+}
+
+message StartOAuthResponse {
+    string authorize_url = 1;
+    string state = 2;
+}
+
+message OAuthCallbackRequest {
+    string code = 1;
+    string state = 2;
+    string proxy_url = 3;
+}
+
+message OAuthCallbackResponse {
+    string account_type = 1;
+    map<string, string> credentials = 2;
+    string account_name = 3;
+}
+
+// ==================== WebSocket 消息 ====================
+
+// WebSocketFrame 核心与插件之间传递的 WebSocket 帧
+message WebSocketFrame {
+    enum FrameType {
+        CONNECT = 0;   // 连接建立，携带元信息（仅第一帧）
+        TEXT    = 1;   // 文本消息
+        BINARY  = 2;   // 二进制消息
+        CLOSE   = 3;   // 关闭连接
+    }
+
+    FrameType type = 1;
+    bytes     data = 2;
+
+    // 仅 CONNECT 帧使用
+    WebSocketConnectInfo connect_info = 3;
+
+    // 仅 CLOSE 帧使用
+    int32  close_code   = 4;
+    string close_reason = 5;
+}
+
+// WebSocketConnectInfo 连接建立时的元信息
+message WebSocketConnectInfo {
+    string path  = 1;                      // 请求路径
+    string query = 2;                      // 查询参数
+    map<string, string> headers = 3;       // 原始请求头
+    string remote_addr    = 4;             // 客户端地址
+    string connection_id  = 5;             // 核心分配的连接 ID
+    // 核心已调度的账户信息
+    int64  account_id       = 6;
+    bytes  credentials_json = 7;
+    string proxy_url        = 8;
+    double rate_multiplier  = 9;
+    int32  max_concurrency  = 10;
+}
