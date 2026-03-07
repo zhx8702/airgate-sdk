@@ -19,10 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PluginService_GetInfo_FullMethodName = "/airgate.plugin.v1.PluginService/GetInfo"
-	PluginService_Init_FullMethodName    = "/airgate.plugin.v1.PluginService/Init"
-	PluginService_Start_FullMethodName   = "/airgate.plugin.v1.PluginService/Start"
-	PluginService_Stop_FullMethodName    = "/airgate.plugin.v1.PluginService/Stop"
+	PluginService_GetInfo_FullMethodName      = "/airgate.plugin.v1.PluginService/GetInfo"
+	PluginService_Init_FullMethodName         = "/airgate.plugin.v1.PluginService/Init"
+	PluginService_Start_FullMethodName        = "/airgate.plugin.v1.PluginService/Start"
+	PluginService_Stop_FullMethodName         = "/airgate.plugin.v1.PluginService/Stop"
+	PluginService_GetWebAssets_FullMethodName = "/airgate.plugin.v1.PluginService/GetWebAssets"
 )
 
 // PluginServiceClient is the client API for PluginService service.
@@ -33,6 +34,8 @@ type PluginServiceClient interface {
 	Init(ctx context.Context, in *InitRequest, opts ...grpc.CallOption) (*Empty, error)
 	Start(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 	Stop(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
+	// 获取插件的前端静态资源
+	GetWebAssets(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*WebAssetsResponse, error)
 }
 
 type pluginServiceClient struct {
@@ -83,6 +86,16 @@ func (c *pluginServiceClient) Stop(ctx context.Context, in *Empty, opts ...grpc.
 	return out, nil
 }
 
+func (c *pluginServiceClient) GetWebAssets(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*WebAssetsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(WebAssetsResponse)
+	err := c.cc.Invoke(ctx, PluginService_GetWebAssets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PluginServiceServer is the server API for PluginService service.
 // All implementations must embed UnimplementedPluginServiceServer
 // for forward compatibility.
@@ -91,6 +104,8 @@ type PluginServiceServer interface {
 	Init(context.Context, *InitRequest) (*Empty, error)
 	Start(context.Context, *Empty) (*Empty, error)
 	Stop(context.Context, *Empty) (*Empty, error)
+	// 获取插件的前端静态资源
+	GetWebAssets(context.Context, *Empty) (*WebAssetsResponse, error)
 	mustEmbedUnimplementedPluginServiceServer()
 }
 
@@ -112,6 +127,9 @@ func (UnimplementedPluginServiceServer) Start(context.Context, *Empty) (*Empty, 
 }
 func (UnimplementedPluginServiceServer) Stop(context.Context, *Empty) (*Empty, error) {
 	return nil, status.Error(codes.Unimplemented, "method Stop not implemented")
+}
+func (UnimplementedPluginServiceServer) GetWebAssets(context.Context, *Empty) (*WebAssetsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetWebAssets not implemented")
 }
 func (UnimplementedPluginServiceServer) mustEmbedUnimplementedPluginServiceServer() {}
 func (UnimplementedPluginServiceServer) testEmbeddedByValue()                       {}
@@ -206,6 +224,24 @@ func _PluginService_Stop_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PluginService_GetWebAssets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PluginServiceServer).GetWebAssets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PluginService_GetWebAssets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PluginServiceServer).GetWebAssets(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PluginService_ServiceDesc is the grpc.ServiceDesc for PluginService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +264,10 @@ var PluginService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Stop",
 			Handler:    _PluginService_Stop_Handler,
+		},
+		{
+			MethodName: "GetWebAssets",
+			Handler:    _PluginService_GetWebAssets_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

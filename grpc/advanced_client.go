@@ -99,3 +99,19 @@ func (c *AdvancedGatewayGRPCClient) AdvancedServices() sdk.AdvancedServiceNeeds 
 func (c *AdvancedGatewayGRPCClient) HandleHTTPRequest(ctx context.Context, req *pb.HttpRequest) (*pb.HttpResponse, error) {
 	return c.advanced.HandleRequest(ctx, req)
 }
+
+// GetWebAssets 获取插件的前端静态资源
+func (c *AdvancedGatewayGRPCClient) GetWebAssets() (map[string][]byte, error) {
+	resp, err := c.plugin.GetWebAssets(context.Background(), &pb.Empty{})
+	if err != nil {
+		return nil, err
+	}
+	if !resp.HasAssets {
+		return nil, nil
+	}
+	assets := make(map[string][]byte, len(resp.Files))
+	for _, f := range resp.Files {
+		assets[f.Path] = f.Content
+	}
+	return assets, nil
+}

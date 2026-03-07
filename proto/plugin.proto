@@ -11,6 +11,8 @@ service PluginService {
     rpc Init(InitRequest) returns (Empty);
     rpc Start(Empty) returns (Empty);
     rpc Stop(Empty) returns (Empty);
+    // 获取插件的前端静态资源
+    rpc GetWebAssets(Empty) returns (WebAssetsResponse);
 }
 
 // ==================== Simple 网关服务 ====================
@@ -386,4 +388,16 @@ message WebSocketConnectInfo {
     string proxy_url        = 8;
     double rate_multiplier  = 9;
     int32  max_concurrency  = 10;
+}
+
+// 前端资源文件
+message WebAssetFile {
+    string path = 1;    // 文件相对路径，如 "index.js"
+    bytes content = 2;  // 文件内容
+}
+
+// 前端资源响应
+message WebAssetsResponse {
+    repeated WebAssetFile files = 1;
+    bool has_assets = 2; // 插件是否提供前端资源
 }

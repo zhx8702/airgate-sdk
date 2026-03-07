@@ -95,3 +95,23 @@ func (s *PluginGRPCServer) Stop(ctx context.Context, _ *pb.Empty) (*pb.Empty, er
 	}
 	return &pb.Empty{}, nil
 }
+
+// GetWebAssets 获取插件的前端静态资源
+func (s *PluginGRPCServer) GetWebAssets(_ context.Context, _ *pb.Empty) (*pb.WebAssetsResponse, error) {
+	provider, ok := s.Impl.(sdk.WebAssetsProvider)
+	if !ok {
+		return &pb.WebAssetsResponse{HasAssets: false}, nil
+	}
+	assets := provider.GetWebAssets()
+	if len(assets) == 0 {
+		return &pb.WebAssetsResponse{HasAssets: false}, nil
+	}
+	resp := &pb.WebAssetsResponse{HasAssets: true}
+	for path, content := range assets {
+		resp.Files = append(resp.Files, &pb.WebAssetFile{
+			Path:    path,
+			Content: content,
+		})
+	}
+	return resp, nil
+}

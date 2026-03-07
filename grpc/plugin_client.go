@@ -94,3 +94,19 @@ func (c *PluginGRPCClient) Stop(ctx context.Context) error {
 	_, err := c.client.Stop(ctx, &pb.Empty{})
 	return err
 }
+
+// GetWebAssets 获取插件的前端静态资源
+func (c *PluginGRPCClient) GetWebAssets() (map[string][]byte, error) {
+	resp, err := c.client.GetWebAssets(context.Background(), &pb.Empty{})
+	if err != nil {
+		return nil, err
+	}
+	if !resp.HasAssets {
+		return nil, nil
+	}
+	assets := make(map[string][]byte, len(resp.Files))
+	for _, f := range resp.Files {
+		assets[f.Path] = f.Content
+	}
+	return assets, nil
+}

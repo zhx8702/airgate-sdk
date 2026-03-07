@@ -55,10 +55,11 @@ type ForwardRequest struct {
 
 // ForwardResult 转发结果（插件 → 核心，用于计费和记录）
 type ForwardResult struct {
-	StatusCode   int           // HTTP 状态码
-	InputTokens  int           // 输入 token 数
-	OutputTokens int           // 输出 token 数
-	CacheTokens  int           // 缓存 token 数
-	Model        string        // 实际使用的模型
-	Duration     time.Duration // 请求耗时
+	StatusCode      int           // HTTP 状态码
+	InputTokens     int           // 输入 token 数
+	OutputTokens    int           // 输出 token 数
+	CacheTokens     int           // 缓存 token 数
+	Model           string        // 实际使用的模型
+	Duration        time.Duration // 请求耗时
+	FallbackErrBody []byte        // 降级模式下的上游错误体（供调用方判断是否需要降级）
 }

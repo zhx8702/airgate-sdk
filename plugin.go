@@ -70,3 +70,9 @@ type ConfigWatcher interface {
 type AccountValidator interface {
 	ValidateCredentials(ctx context.Context, credentials map[string]string) error
 }
+
+// WebAssetsProvider 可选接口，插件实现此接口可提供前端静态资源
+// 核心在启动插件时调用，将资源提取到本地供前端动态加载
+type WebAssetsProvider interface {
+	GetWebAssets() map[string][]byte
+}

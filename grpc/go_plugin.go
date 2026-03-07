@@ -10,6 +10,14 @@ import (
 	"google.golang.org/grpc"
 )
 
+// 确保所有 Plugin 类型都实现了 goplugin.GRPCPlugin 接口
+var (
+	_ goplugin.GRPCPlugin = (*SimpleGatewayGRPCPlugin)(nil)
+	_ goplugin.GRPCPlugin = (*AdvancedGatewayGRPCPlugin)(nil)
+	_ goplugin.GRPCPlugin = (*PaymentGRPCPlugin)(nil)
+	_ goplugin.GRPCPlugin = (*ExtensionGRPCPlugin)(nil)
+)
+
 // SimpleGatewayGRPCPlugin 实现 hashicorp/go-plugin.GRPCPlugin 接口
 // 插件侧用于注册 gRPC 服务，核心侧用于创建 gRPC 客户端
 type SimpleGatewayGRPCPlugin struct {
@@ -24,7 +32,7 @@ func (p *SimpleGatewayGRPCPlugin) GRPCServer(_ *goplugin.GRPCBroker, s *grpc.Ser
 	return nil
 }
 
-func (p *SimpleGatewayGRPCPlugin) GRPCClient(_ *goplugin.GRPCBroker, _ *goplugin.GRPCClient, c *grpc.ClientConn) (interface{}, error) {
+func (p *SimpleGatewayGRPCPlugin) GRPCClient(_ context.Context, _ *goplugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return &SimpleGatewayGRPCClient{
 		plugin:  pb.NewPluginServiceClient(c),
 		gateway: pb.NewSimpleGatewayServiceClient(c),
@@ -43,7 +51,7 @@ func (p *AdvancedGatewayGRPCPlugin) GRPCServer(_ *goplugin.GRPCBroker, s *grpc.S
 	return nil
 }
 
-func (p *AdvancedGatewayGRPCPlugin) GRPCClient(_ *goplugin.GRPCBroker, _ *goplugin.GRPCClient, c *grpc.ClientConn) (interface{}, error) {
+func (p *AdvancedGatewayGRPCPlugin) GRPCClient(_ context.Context, _ *goplugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return &AdvancedGatewayGRPCClient{
 		plugin:   pb.NewPluginServiceClient(c),
 		advanced: pb.NewAdvancedGatewayServiceClient(c),
@@ -62,7 +70,7 @@ func (p *PaymentGRPCPlugin) GRPCServer(_ *goplugin.GRPCBroker, s *grpc.Server) e
 	return nil
 }
 
-func (p *PaymentGRPCPlugin) GRPCClient(_ *goplugin.GRPCBroker, _ *goplugin.GRPCClient, c *grpc.ClientConn) (interface{}, error) {
+func (p *PaymentGRPCPlugin) GRPCClient(_ context.Context, _ *goplugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return &PaymentGRPCClient{
 		plugin:  pb.NewPluginServiceClient(c),
 		payment: pb.NewPaymentServiceClient(c),
@@ -81,7 +89,7 @@ func (p *ExtensionGRPCPlugin) GRPCServer(_ *goplugin.GRPCBroker, s *grpc.Server)
 	return nil
 }
 
-func (p *ExtensionGRPCPlugin) GRPCClient(_ *goplugin.GRPCBroker, _ *goplugin.GRPCClient, c *grpc.ClientConn) (interface{}, error) {
+func (p *ExtensionGRPCPlugin) GRPCClient(_ context.Context, _ *goplugin.GRPCBroker, c *grpc.ClientConn) (interface{}, error) {
 	return &ExtensionGRPCClient{
 		plugin:    pb.NewPluginServiceClient(c),
 		extension: pb.NewExtensionServiceClient(c),

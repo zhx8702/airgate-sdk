@@ -114,6 +114,22 @@ func (c *PaymentGRPCClient) HandleCallback(w http.ResponseWriter, r *http.Reques
 	return nil
 }
 
+// GetWebAssets 获取插件的前端静态资源
+func (c *PaymentGRPCClient) GetWebAssets() (map[string][]byte, error) {
+	resp, err := c.plugin.GetWebAssets(context.Background(), &pb.Empty{})
+	if err != nil {
+		return nil, err
+	}
+	if !resp.HasAssets {
+		return nil, nil
+	}
+	assets := make(map[string][]byte, len(resp.Files))
+	for _, f := range resp.Files {
+		assets[f.Path] = f.Content
+	}
+	return assets, nil
+}
+
 // httpRequestFromProto 将 protobuf HttpRequest 转为 http.Request（工具函数）
 func httpRequestFromProto(req *pb.HttpRequest) *http.Request {
 	r := &http.Request{
