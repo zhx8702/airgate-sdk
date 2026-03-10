@@ -1,7 +1,6 @@
 package grpc
 
 import (
-	"database/sql"
 	"log/slog"
 	"strconv"
 	"time"
@@ -11,9 +10,8 @@ import (
 
 // grpcPluginContext 通过 gRPC 传入的插件上下文（插件进程侧）
 type grpcPluginContext struct {
-	config       sdk.PluginConfig
-	logger       *slog.Logger
-	coreServices sdk.CoreServices
+	config sdk.PluginConfig
+	logger *slog.Logger
 }
 
 func (c *grpcPluginContext) Logger() *slog.Logger {
@@ -25,20 +23,6 @@ func (c *grpcPluginContext) Logger() *slog.Logger {
 
 func (c *grpcPluginContext) Config() sdk.PluginConfig {
 	return c.config
-}
-
-func (c *grpcPluginContext) DB() *sql.DB {
-	// 插件进程内不直接访问 DB，通过 gRPC 回调核心
-	return nil
-}
-
-func (c *grpcPluginContext) CoreServices() sdk.CoreServices {
-	return c.coreServices
-}
-
-// SetCoreServices 设置核心服务（由 go-plugin 回调连接建立后设置）
-func (c *grpcPluginContext) SetCoreServices(svc sdk.CoreServices) {
-	c.coreServices = svc
 }
 
 // mapConfig 基于 map 的简易配置实现

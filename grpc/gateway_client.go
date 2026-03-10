@@ -5,54 +5,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"time"
 
 	sdk "github.com/DouDOU-start/airgate-sdk"
 	pb "github.com/DouDOU-start/airgate-sdk/proto"
 )
 
-// SimpleGatewayGRPCClient 将 gRPC 客户端包装为 SimpleGatewayPlugin 接口（核心侧使用）
-type SimpleGatewayGRPCClient struct {
-	plugin  pb.PluginServiceClient
-	gateway pb.SimpleGatewayServiceClient
+// GatewayGRPCClient 将 gRPC 客户端包装为 GatewayPlugin 接口（核心侧使用）
+type GatewayGRPCClient struct {
+	pluginBase // 嵌入公共基类，自动获得 Info/Init/Start/Stop/GetWebAssets
+	gateway    pb.GatewayServiceClient
 
 	// 缓存
-	cachedInfo     *sdk.PluginInfo
 	cachedPlatform string
 	cachedModels   []sdk.ModelInfo
 	cachedRoutes   []sdk.RouteDefinition
 }
 
-func (c *SimpleGatewayGRPCClient) Info() sdk.PluginInfo {
-	if c.cachedInfo != nil {
-		return *c.cachedInfo
-	}
-	pc := &PluginGRPCClient{client: c.plugin}
-	info := pc.Info()
-	c.cachedInfo = &info
-	return info
-}
-
-func (c *SimpleGatewayGRPCClient) Init(ctx sdk.PluginContext) error {
-	pc := &PluginGRPCClient{client: c.plugin}
-	return pc.Init(ctx)
-}
-
-func (c *SimpleGatewayGRPCClient) Start(ctx context.Context) error {
-	_, err := c.plugin.Start(ctx, &pb.Empty{})
-	return err
-}
-
-func (c *SimpleGatewayGRPCClient) Stop(ctx context.Context) error {
-	_, err := c.plugin.Stop(ctx, &pb.Empty{})
-	return err
-}
-
-func (c *SimpleGatewayGRPCClient) Platform() string {
+func (c *GatewayGRPCClient) Platform() string {
 	if c.cachedPlatform != "" {
 		return c.cachedPlatform
 	}
-	resp, err := c.gateway.GetPlatform(context.Background(), &pb.Empty{})
+	ctx, cancel := withTimeout()
+	defer cancel()
+	resp, err := c.gateway.GetPlatform(ctx, &pb.Empty{})
 	if err != nil {
 		return ""
 	}
@@ -60,34 +37,27 @@ func (c *SimpleGatewayGRPCClient) Platform() string {
 	return resp.Value
 }
 
-func (c *SimpleGatewayGRPCClient) Models() []sdk.ModelInfo {
+func (c *GatewayGRPCClient) Models() []sdk.ModelInfo {
 	if c.cachedModels != nil {
 		return c.cachedModels
 	}
-	resp, err := c.gateway.GetModels(context.Background(), &pb.Empty{})
+	ctx, cancel := withTimeout()
+	defer cancel()
+	resp, err := c.gateway.GetModels(ctx, &pb.Empty{})
 	if err != nil {
 		return nil
 	}
-	models := make([]sdk.ModelInfo, len(resp.Models))
-	for i, m := range resp.Models {
-		models[i] = sdk.ModelInfo{
-			ID:          m.Id,
-			Name:        m.Name,
-			MaxTokens:   int(m.MaxTokens),
-			InputPrice:  m.InputPrice,
-			OutputPrice: m.OutputPrice,
-			CachePrice:  m.CachePrice,
-		}
-	}
-	c.cachedModels = models
-	return models
+	c.cachedModels = convertModels(resp.Models)
+	return c.cachedModels
 }
 
-func (c *SimpleGatewayGRPCClient) Routes() []sdk.RouteDefinition {
+func (c *GatewayGRPCClient) Routes() []sdk.RouteDefinition {
 	if c.cachedRoutes != nil {
 		return c.cachedRoutes
 	}
-	resp, err := c.gateway.GetRoutes(context.Background(), &pb.Empty{})
+	ctx, cancel := withTimeout()
+	defer cancel()
+	resp, err := c.gateway.GetRoutes(ctx, &pb.Empty{})
 	if err != nil {
 		return nil
 	}
@@ -103,27 +73,43 @@ func (c *SimpleGatewayGRPCClient) Routes() []sdk.RouteDefinition {
 	return routes
 }
 
-func (c *SimpleGatewayGRPCClient) Forward(ctx context.Context, req *sdk.ForwardRequest) (*sdk.ForwardResult, error) {
-	// 序列化 credentials
+// buildProtoRequest 将 SDK ForwardRequest 转为 proto ForwardRequest
+func buildProtoRequest(req *sdk.ForwardRequest) *pb.ForwardRequest {
 	credsJSON, _ := json.Marshal(req.Account.Credentials)
-
-	// 扁平化 headers
 	headers := make(map[string]string)
 	for k := range req.Headers {
 		headers[k] = req.Headers.Get(k)
 	}
-
-	pbReq := &pb.ForwardRequest{
+	return &pb.ForwardRequest{
 		AccountId:       req.Account.ID,
+		AccountName:     req.Account.Name,
+		AccountPlatform: req.Account.Platform,
+		AccountType:     req.Account.Type,
 		CredentialsJson: credsJSON,
 		ProxyUrl:        req.Account.ProxyURL,
 		Body:            req.Body,
 		Headers:         headers,
 		Model:           req.Model,
 		Stream:          req.Stream,
-		RateMultiplier:  req.Account.RateMultiplier,
-		MaxConcurrency:  int32(req.Account.MaxConcurrency),
 	}
+}
+
+// fromProtoResult 将 proto ForwardResult 转为 SDK ForwardResult
+func fromProtoResult(r *pb.ForwardResult) *sdk.ForwardResult {
+	return &sdk.ForwardResult{
+		StatusCode:    int(r.StatusCode),
+		InputTokens:   int(r.InputTokens),
+		OutputTokens:  int(r.OutputTokens),
+		CacheTokens:   int(r.CacheTokens),
+		Model:         r.Model,
+		Duration:      time.Duration(r.DurationMs) * time.Millisecond,
+		AccountStatus: r.AccountStatus,
+		RetryAfter:    time.Duration(r.RetryAfterMs) * time.Millisecond,
+	}
+}
+
+func (c *GatewayGRPCClient) Forward(ctx context.Context, req *sdk.ForwardRequest) (*sdk.ForwardResult, error) {
+	pbReq := buildProtoRequest(req)
 
 	// 流式请求
 	if req.Stream && req.Writer != nil {
@@ -135,18 +121,10 @@ func (c *SimpleGatewayGRPCClient) Forward(ctx context.Context, req *sdk.ForwardR
 	if err != nil {
 		return nil, fmt.Errorf("gRPC Forward 调用失败: %w", err)
 	}
-
-	return &sdk.ForwardResult{
-		StatusCode:   int(resp.StatusCode),
-		InputTokens:  int(resp.InputTokens),
-		OutputTokens: int(resp.OutputTokens),
-		CacheTokens:  int(resp.CacheTokens),
-		Model:        resp.Model,
-		Duration:     time.Duration(resp.DurationMs) * time.Millisecond,
-	}, nil
+	return fromProtoResult(resp), nil
 }
 
-func (c *SimpleGatewayGRPCClient) forwardStream(ctx context.Context, pbReq *pb.ForwardRequest, req *sdk.ForwardRequest) (*sdk.ForwardResult, error) {
+func (c *GatewayGRPCClient) forwardStream(ctx context.Context, pbReq *pb.ForwardRequest, req *sdk.ForwardRequest) (*sdk.ForwardResult, error) {
 	stream, err := c.gateway.ForwardStream(ctx, pbReq)
 	if err != nil {
 		return nil, fmt.Errorf("gRPC ForwardStream 调用失败: %w", err)
@@ -162,28 +140,17 @@ func (c *SimpleGatewayGRPCClient) forwardStream(ctx context.Context, pbReq *pb.F
 			return nil, fmt.Errorf("gRPC 流接收失败: %w", err)
 		}
 
-		// 写入数据到 ResponseWriter
 		if len(chunk.Data) > 0 && req.Writer != nil {
-			if _, err := req.Writer.Write(chunk.Data); err != nil {
-				return nil, fmt.Errorf("写入响应失败: %w", err)
+			if _, writeErr := req.Writer.Write(chunk.Data); writeErr != nil {
+				return nil, fmt.Errorf("写入响应失败: %w", writeErr)
 			}
-			// 刷新流式数据
 			if flusher, ok := req.Writer.(interface{ Flush() }); ok {
 				flusher.Flush()
 			}
 		}
 
-		// 最终结果
 		if chunk.Done && chunk.FinalResult != nil {
-			r := chunk.FinalResult
-			finalResult = &sdk.ForwardResult{
-				StatusCode:   int(r.StatusCode),
-				InputTokens:  int(r.InputTokens),
-				OutputTokens: int(r.OutputTokens),
-				CacheTokens:  int(r.CacheTokens),
-				Model:        r.Model,
-				Duration:     time.Duration(r.DurationMs) * time.Millisecond,
-			}
+			finalResult = fromProtoResult(chunk.FinalResult)
 		}
 	}
 
@@ -193,26 +160,142 @@ func (c *SimpleGatewayGRPCClient) forwardStream(ctx context.Context, pbReq *pb.F
 	return finalResult, nil
 }
 
-// ValidateCredentials 验证凭证（实现 AccountValidator 接口）
-func (c *SimpleGatewayGRPCClient) ValidateCredentials(ctx context.Context, credentials map[string]string) error {
-	_, err := c.gateway.ValidateCredentials(ctx, &pb.CredentialsRequest{
+func (c *GatewayGRPCClient) ValidateAccount(ctx context.Context, credentials map[string]string) error {
+	_, err := c.gateway.ValidateAccount(ctx, &pb.CredentialsRequest{
 		Credentials: credentials,
 	})
 	return err
 }
 
-// GetWebAssets 获取插件的前端静态资源
-func (c *SimpleGatewayGRPCClient) GetWebAssets() (map[string][]byte, error) {
-	resp, err := c.plugin.GetWebAssets(context.Background(), &pb.Empty{})
+func (c *GatewayGRPCClient) QueryQuota(ctx context.Context, credentials map[string]string) (*sdk.QuotaInfo, error) {
+	resp, err := c.gateway.QueryQuota(ctx, &pb.CredentialsRequest{
+		Credentials: credentials,
+	})
 	if err != nil {
 		return nil, err
 	}
-	if !resp.HasAssets {
-		return nil, nil
+	return &sdk.QuotaInfo{
+		Total:     resp.Total,
+		Used:      resp.Used,
+		Remaining: resp.Remaining,
+		Currency:  resp.Currency,
+		ExpiresAt: resp.ExpiresAt,
+		Extra:     resp.Extra,
+	}, nil
+}
+
+// HandleWebSocket 通过 gRPC 双向流处理 WebSocket（Core 侧调用）
+func (c *GatewayGRPCClient) HandleWebSocket(ctx context.Context, conn sdk.WebSocketConn) (*sdk.ForwardResult, error) {
+	stream, err := c.gateway.HandleWebSocket(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("gRPC HandleWebSocket 调用失败: %w", err)
 	}
-	assets := make(map[string][]byte, len(resp.Files))
-	for _, f := range resp.Files {
-		assets[f.Path] = f.Content
+
+	info := conn.ConnectInfo()
+	credsJSON, _ := json.Marshal(info.Account.Credentials)
+
+	// 发送 CONNECT 帧
+	if err := stream.Send(&pb.WebSocketFrame{
+		Type: pb.WebSocketFrame_CONNECT,
+		ConnectInfo: &pb.WebSocketConnectInfo{
+			Path:            info.Path,
+			Query:           info.Query,
+			Headers:         flattenHeaders(info.Headers),
+			RemoteAddr:      info.RemoteAddr,
+			ConnectionId:    info.ConnectionID,
+			AccountId:       info.Account.ID,
+			AccountName:     info.Account.Name,
+			AccountPlatform: info.Account.Platform,
+			AccountType:     info.Account.Type,
+			CredentialsJson: credsJSON,
+			ProxyUrl:        info.Account.ProxyURL,
+		},
+	}); err != nil {
+		return nil, fmt.Errorf("发送 CONNECT 帧失败: %w", err)
 	}
-	return assets, nil
+
+	// 启动客户端 → 插件的消息转发
+	clientConn := &grpcClientWebSocketConn{
+		stream: stream,
+		info:   info,
+	}
+
+	// 双向转发 goroutine：读取客户端消息发到插件
+	errCh := make(chan error, 1)
+	go func() {
+		for {
+			msgType, data, readErr := conn.ReadMessage()
+			if readErr != nil {
+				_ = stream.Send(&pb.WebSocketFrame{
+					Type: pb.WebSocketFrame_CLOSE,
+				})
+				errCh <- readErr
+				return
+			}
+			frameType := pb.WebSocketFrame_TEXT
+			if msgType == sdk.WSMessageBinary {
+				frameType = pb.WebSocketFrame_BINARY
+			}
+			if sendErr := stream.Send(&pb.WebSocketFrame{
+				Type: frameType,
+				Data: data,
+			}); sendErr != nil {
+				errCh <- sendErr
+				return
+			}
+		}
+	}()
+
+	// 读取插件 → 客户端的消息
+	var result *sdk.ForwardResult
+	for {
+		frame, recvErr := stream.Recv()
+		if recvErr == io.EOF {
+			break
+		}
+		if recvErr != nil {
+			return nil, fmt.Errorf("gRPC WebSocket 流接收失败: %w", recvErr)
+		}
+
+		switch frame.Type {
+		case pb.WebSocketFrame_TEXT:
+			if writeErr := conn.WriteMessage(sdk.WSMessageText, frame.Data); writeErr != nil {
+				return nil, writeErr
+			}
+		case pb.WebSocketFrame_BINARY:
+			if writeErr := conn.WriteMessage(sdk.WSMessageBinary, frame.Data); writeErr != nil {
+				return nil, writeErr
+			}
+		case pb.WebSocketFrame_CLOSE:
+			_ = conn.Close(int(frame.CloseCode), frame.CloseReason)
+			goto done
+		case pb.WebSocketFrame_RESULT:
+			if frame.Result != nil {
+				result = fromProtoResult(frame.Result)
+			}
+			goto done
+		}
+	}
+
+done:
+	_ = clientConn // 保持引用
+	if result == nil {
+		return &sdk.ForwardResult{}, nil
+	}
+	return result, nil
+}
+
+// flattenHeaders 将 http.Header 扁平化为 map[string]string
+func flattenHeaders(headers http.Header) map[string]string {
+	flat := make(map[string]string, len(headers))
+	for k := range headers {
+		flat[k] = headers.Get(k)
+	}
+	return flat
+}
+
+// grpcClientWebSocketConn 用于保持 gRPC 流引用
+type grpcClientWebSocketConn struct {
+	stream pb.GatewayService_HandleWebSocketClient
+	info   *sdk.WebSocketConnectInfo
 }

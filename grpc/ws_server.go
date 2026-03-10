@@ -12,13 +12,7 @@ import (
 
 // HandleWebSocket 处理核心发来的 WebSocket 双向流
 // 将 gRPC 双向流包装为 sdk.WebSocketConn，传给插件的 HandleWebSocket()
-func (s *SimpleGatewayGRPCServer) HandleWebSocket(stream pb.SimpleGatewayService_HandleWebSocketServer) error {
-	// 检查插件是否实现了 WebSocketHandler
-	handler, ok := s.Impl.(sdk.WebSocketHandler)
-	if !ok {
-		return fmt.Errorf("插件未实现 WebSocketHandler 接口")
-	}
-
+func (s *GatewayGRPCServer) HandleWebSocket(stream pb.GatewayService_HandleWebSocketServer) error {
 	// 等待第一帧：CONNECT 帧，获取连接元信息
 	firstFrame, err := stream.Recv()
 	if err != nil {
@@ -34,12 +28,25 @@ func (s *SimpleGatewayGRPCServer) HandleWebSocket(stream pb.SimpleGatewayService
 		connectInfo: convertConnectInfo(firstFrame.ConnectInfo),
 	}
 
-	return handler.HandleWebSocket(stream.Context(), conn)
+	// 调用插件 HandleWebSocket，获取 ForwardResult
+	result, err := s.Impl.HandleWebSocket(stream.Context(), conn)
+	if err != nil {
+		return err
+	}
+
+	// 通过 RESULT 帧返回 ForwardResult
+	if result != nil {
+		return stream.Send(&pb.WebSocketFrame{
+			Type:   pb.WebSocketFrame_RESULT,
+			Result: toProtoResult(result),
+		})
+	}
+	return nil
 }
 
 // grpcWebSocketConn 将 gRPC 双向流包装为 sdk.WebSocketConn
 type grpcWebSocketConn struct {
-	stream      pb.SimpleGatewayService_HandleWebSocketServer
+	stream      pb.GatewayService_HandleWebSocketServer
 	connectInfo *sdk.WebSocketConnectInfo
 }
 
@@ -110,11 +117,12 @@ func convertConnectInfo(info *pb.WebSocketConnectInfo) *sdk.WebSocketConnectInfo
 		RemoteAddr:   info.RemoteAddr,
 		ConnectionID: info.ConnectionId,
 		Account: &sdk.Account{
-			ID:             info.AccountId,
-			Credentials:    creds,
-			ProxyURL:       info.ProxyUrl,
-			RateMultiplier: info.RateMultiplier,
-			MaxConcurrency: int(info.MaxConcurrency),
+			ID:          info.AccountId,
+			Name:        info.AccountName,
+			Platform:    info.AccountPlatform,
+			Type:        info.AccountType,
+			Credentials: creds,
+			ProxyURL:    info.ProxyUrl,
 		},
 	}
 }

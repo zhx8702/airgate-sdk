@@ -10,17 +10,17 @@ import (
 	pb "github.com/DouDOU-start/airgate-sdk/proto"
 )
 
-// SimpleGatewayGRPCServer 将 SimpleGatewayPlugin 包装为 gRPC 服务端
-type SimpleGatewayGRPCServer struct {
-	pb.UnimplementedSimpleGatewayServiceServer
-	Impl sdk.SimpleGatewayPlugin
+// GatewayGRPCServer 将 GatewayPlugin 包装为 gRPC 服务端
+type GatewayGRPCServer struct {
+	pb.UnimplementedGatewayServiceServer
+	Impl sdk.GatewayPlugin
 }
 
-func (s *SimpleGatewayGRPCServer) GetPlatform(_ context.Context, _ *pb.Empty) (*pb.StringResponse, error) {
+func (s *GatewayGRPCServer) GetPlatform(_ context.Context, _ *pb.Empty) (*pb.StringResponse, error) {
 	return &pb.StringResponse{Value: s.Impl.Platform()}, nil
 }
 
-func (s *SimpleGatewayGRPCServer) GetModels(_ context.Context, _ *pb.Empty) (*pb.ModelsResponse, error) {
+func (s *GatewayGRPCServer) GetModels(_ context.Context, _ *pb.Empty) (*pb.ModelsResponse, error) {
 	models := s.Impl.Models()
 	resp := &pb.ModelsResponse{}
 	for _, m := range models {
@@ -36,7 +36,7 @@ func (s *SimpleGatewayGRPCServer) GetModels(_ context.Context, _ *pb.Empty) (*pb
 	return resp, nil
 }
 
-func (s *SimpleGatewayGRPCServer) GetRoutes(_ context.Context, _ *pb.Empty) (*pb.RoutesResponse, error) {
+func (s *GatewayGRPCServer) GetRoutes(_ context.Context, _ *pb.Empty) (*pb.RoutesResponse, error) {
 	routes := s.Impl.Routes()
 	resp := &pb.RoutesResponse{}
 	for _, r := range routes {
@@ -49,72 +49,66 @@ func (s *SimpleGatewayGRPCServer) GetRoutes(_ context.Context, _ *pb.Empty) (*pb
 	return resp, nil
 }
 
-func (s *SimpleGatewayGRPCServer) Forward(ctx context.Context, req *pb.ForwardRequest) (*pb.ForwardResult, error) {
-	// 反序列化 credentials
+// buildAccount 从 proto ForwardRequest 构建 SDK Account
+func buildAccount(req *pb.ForwardRequest) *sdk.Account {
 	var creds map[string]string
 	if len(req.CredentialsJson) > 0 {
 		_ = json.Unmarshal(req.CredentialsJson, &creds)
 	}
+	return &sdk.Account{
+		ID:          req.AccountId,
+		Name:        req.AccountName,
+		Platform:    req.AccountPlatform,
+		Type:        req.AccountType,
+		Credentials: creds,
+		ProxyURL:    req.ProxyUrl,
+	}
+}
 
-	// 构建 SDK ForwardRequest
+// toProtoResult 将 SDK ForwardResult 转为 proto ForwardResult
+func toProtoResult(result *sdk.ForwardResult) *pb.ForwardResult {
+	return &pb.ForwardResult{
+		StatusCode:    int32(result.StatusCode),
+		InputTokens:   int32(result.InputTokens),
+		OutputTokens:  int32(result.OutputTokens),
+		CacheTokens:   int32(result.CacheTokens),
+		Model:         result.Model,
+		DurationMs:    result.Duration.Milliseconds(),
+		AccountStatus: result.AccountStatus,
+		RetryAfterMs:  result.RetryAfter.Milliseconds(),
+	}
+}
+
+func (s *GatewayGRPCServer) Forward(ctx context.Context, req *pb.ForwardRequest) (*pb.ForwardResult, error) {
 	headers := make(http.Header)
 	for k, v := range req.Headers {
 		headers.Set(k, v)
 	}
 
 	fwdReq := &sdk.ForwardRequest{
-		Account: &sdk.Account{
-			ID:             req.AccountId,
-			Credentials:    creds,
-			ProxyURL:       req.ProxyUrl,
-			RateMultiplier: req.RateMultiplier,
-			MaxConcurrency: int(req.MaxConcurrency),
-		},
+		Account: buildAccount(req),
 		Body:    req.Body,
 		Headers: headers,
 		Model:   req.Model,
 		Stream:  req.Stream,
-		// Writer 在非流式模式下不需要
 	}
 
 	result, err := s.Impl.Forward(ctx, fwdReq)
 	if err != nil {
 		return nil, err
 	}
-
-	return &pb.ForwardResult{
-		StatusCode:   int32(result.StatusCode),
-		InputTokens:  int32(result.InputTokens),
-		OutputTokens: int32(result.OutputTokens),
-		CacheTokens:  int32(result.CacheTokens),
-		Model:        result.Model,
-		DurationMs:   result.Duration.Milliseconds(),
-	}, nil
+	return toProtoResult(result), nil
 }
 
-func (s *SimpleGatewayGRPCServer) ForwardStream(req *pb.ForwardRequest, stream pb.SimpleGatewayService_ForwardStreamServer) error {
-	// 反序列化 credentials
-	var creds map[string]string
-	if len(req.CredentialsJson) > 0 {
-		_ = json.Unmarshal(req.CredentialsJson, &creds)
-	}
-
+func (s *GatewayGRPCServer) ForwardStream(req *pb.ForwardRequest, stream pb.GatewayService_ForwardStreamServer) error {
 	headers := make(http.Header)
 	for k, v := range req.Headers {
 		headers.Set(k, v)
 	}
 
-	// 创建一个流式写入器，将 HTTP ResponseWriter 写入到 gRPC 流
 	sw := &streamWriter{stream: stream}
-
 	fwdReq := &sdk.ForwardRequest{
-		Account: &sdk.Account{
-			ID:             req.AccountId,
-			Credentials:    creds,
-			ProxyURL:       req.ProxyUrl,
-			RateMultiplier: req.RateMultiplier,
-			MaxConcurrency: int(req.MaxConcurrency),
-		},
+		Account: buildAccount(req),
 		Body:    req.Body,
 		Headers: headers,
 		Model:   req.Model,
@@ -128,34 +122,42 @@ func (s *SimpleGatewayGRPCServer) ForwardStream(req *pb.ForwardRequest, stream p
 		return err
 	}
 
-	// 发送最终结果
+	// 补充耗时
+	if result.Duration == 0 {
+		result.Duration = time.Since(startTime)
+	}
+
 	return stream.Send(&pb.ForwardChunk{
-		Done: true,
-		FinalResult: &pb.ForwardResult{
-			StatusCode:   int32(result.StatusCode),
-			InputTokens:  int32(result.InputTokens),
-			OutputTokens: int32(result.OutputTokens),
-			CacheTokens:  int32(result.CacheTokens),
-			Model:        result.Model,
-			DurationMs:   time.Since(startTime).Milliseconds(),
-		},
+		Done:        true,
+		FinalResult: toProtoResult(result),
 	})
 }
 
-func (s *SimpleGatewayGRPCServer) ValidateCredentials(ctx context.Context, req *pb.CredentialsRequest) (*pb.Empty, error) {
-	validator, ok := s.Impl.(sdk.AccountValidator)
-	if !ok {
-		return &pb.Empty{}, nil
-	}
-	if err := validator.ValidateCredentials(ctx, req.Credentials); err != nil {
+func (s *GatewayGRPCServer) ValidateAccount(ctx context.Context, req *pb.CredentialsRequest) (*pb.Empty, error) {
+	if err := s.Impl.ValidateAccount(ctx, req.Credentials); err != nil {
 		return nil, err
 	}
 	return &pb.Empty{}, nil
 }
 
+func (s *GatewayGRPCServer) QueryQuota(ctx context.Context, req *pb.CredentialsRequest) (*pb.QuotaInfoResponse, error) {
+	info, err := s.Impl.QueryQuota(ctx, req.Credentials)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.QuotaInfoResponse{
+		Total:     info.Total,
+		Used:      info.Used,
+		Remaining: info.Remaining,
+		Currency:  info.Currency,
+		ExpiresAt: info.ExpiresAt,
+		Extra:     info.Extra,
+	}, nil
+}
+
 // streamWriter 将 gRPC 流包装为 http.ResponseWriter
 type streamWriter struct {
-	stream  pb.SimpleGatewayService_ForwardStreamServer
+	stream  pb.GatewayService_ForwardStreamServer
 	headers http.Header
 	code    int
 }

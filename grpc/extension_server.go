@@ -13,9 +13,10 @@ type ExtensionGRPCServer struct {
 	Impl sdk.ExtensionPlugin
 }
 
-func (s *ExtensionGRPCServer) Migrate(ctx context.Context, _ *pb.Empty) (*pb.Empty, error) {
-	// Extension 插件的数据库迁移通过核心传入 DB 连接
-	// 在 gRPC 模式下，迁移在 Init 阶段由核心侧执行
+func (s *ExtensionGRPCServer) Migrate(_ context.Context, _ *pb.Empty) (*pb.Empty, error) {
+	if err := s.Impl.Migrate(); err != nil {
+		return nil, err
+	}
 	return &pb.Empty{}, nil
 }
 

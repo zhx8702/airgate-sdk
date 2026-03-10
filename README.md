@@ -184,7 +184,7 @@ Core 自动处理的能力：
 | 能力 | 方法 | 说明 |
 | --- | --- | --- |
 | 自定义路由 | `RegisterRoutes(r)` | 注册任意 HTTP API |
-| 数据库迁移 | `Migrate(db)` | 创建插件专属数据表 |
+| 数据库迁移 | `Migrate()` | 创建插件专属数据表（插件通过 Config 获取 DSN 自行建连） |
 | 后台任务 | `BackgroundTasks()` | 声明定时任务，Core 负责调度 |
 
 典型场景：
@@ -201,6 +201,19 @@ Core 自动处理的能力：
 | --- | --- | --- |
 | `WebAssetsProvider` | 提供前端静态资源 | 自定义管理页面、嵌入组件 |
 | `ConfigWatcher` | 配置热更新 | 不重启改配置 |
+
+### PluginContext
+
+插件在 `Init` 阶段收到 `PluginContext`，提供运行时基础能力：
+
+```go
+type PluginContext interface {
+    Logger() *slog.Logger    // 结构化日志
+    Config() PluginConfig    // 配置读取
+}
+```
+
+> 数据库连接：Core 通过 Config 传递 DSN（`config.GetString("db_dsn")`），插件自行 `sql.Open` 建连。这样在 gRPC 跨进程模式下也能正常工作。
 
 ## 快速开始：网关插件
 

@@ -24,32 +24,6 @@ func (s *PluginGRPCServer) GetInfo(_ context.Context, _ *pb.Empty) (*pb.PluginIn
 		Type:        string(info.Type),
 	}
 
-	for _, f := range info.ConfigFields {
-		resp.ConfigFields = append(resp.ConfigFields, &pb.ConfigFieldProto{
-			Key:         f.Key,
-			Type:        f.Type,
-			Default:     f.Default,
-			Description: f.Description,
-			Required:    f.Required,
-		})
-	}
-	for _, f := range info.CredentialFields {
-		resp.CredentialFields = append(resp.CredentialFields, &pb.CredentialFieldProto{
-			Key:         f.Key,
-			Label:       f.Label,
-			Type:        f.Type,
-			Required:    f.Required,
-			Placeholder: f.Placeholder,
-		})
-	}
-	for _, p := range info.FrontendPages {
-		resp.FrontendPages = append(resp.FrontendPages, &pb.FrontendPageProto{
-			Path:        p.Path,
-			Title:       p.Title,
-			Icon:        p.Icon,
-			Description: p.Description,
-		})
-	}
 	for _, at := range info.AccountTypes {
 		atProto := &pb.AccountTypeProto{
 			Key:         at.Key,
@@ -67,12 +41,26 @@ func (s *PluginGRPCServer) GetInfo(_ context.Context, _ *pb.Empty) (*pb.PluginIn
 		}
 		resp.AccountTypes = append(resp.AccountTypes, atProto)
 	}
+	for _, p := range info.FrontendPages {
+		resp.FrontendPages = append(resp.FrontendPages, &pb.FrontendPageProto{
+			Path:        p.Path,
+			Title:       p.Title,
+			Icon:        p.Icon,
+			Description: p.Description,
+		})
+	}
+	for _, w := range info.FrontendWidgets {
+		resp.FrontendWidgets = append(resp.FrontendWidgets, &pb.FrontendWidgetProto{
+			Slot:      w.Slot,
+			EntryFile: w.EntryFile,
+			Title:     w.Title,
+		})
+	}
 
 	return resp, nil
 }
 
-func (s *PluginGRPCServer) Init(ctx context.Context, req *pb.InitRequest) (*pb.Empty, error) {
-	// 构建 PluginContext（简易实现，配置通过 gRPC 传入）
+func (s *PluginGRPCServer) Init(_ context.Context, req *pb.InitRequest) (*pb.Empty, error) {
 	pctx := &grpcPluginContext{
 		config: &mapConfig{data: req.Config},
 	}

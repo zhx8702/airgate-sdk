@@ -2,9 +2,12 @@ package sdk
 
 import (
 	"context"
-	"database/sql"
+	"errors"
 	"log/slog"
 )
+
+// ErrNotSupported 插件不支持某项能力时返回此错误
+var ErrNotSupported = errors.New("not supported")
 
 // Plugin 基础插件接口，所有插件必须实现
 type Plugin interface {
@@ -23,52 +26,34 @@ type PluginType string
 
 const (
 	PluginTypeGateway   PluginType = "gateway"
-	PluginTypePayment   PluginType = "payment"
 	PluginTypeExtension PluginType = "extension"
 )
 
 // PluginInfo 插件元信息
 type PluginInfo struct {
-	ID               string            `json:"id"`                // 运行时唯一标识（canonical plugin name），Core 用于 API / 资源路径 / 动态加载
-	Name             string            `json:"name"`              // 展示名称（display name），仅用于 UI 展示
-	Version          string            `json:"version"`           // 语义化版本
-	Description      string            `json:"description"`       // 简要描述
-	Author           string            `json:"author"`            // 作者
-	Type             PluginType        `json:"type"`              // gateway / payment / extension
-	ConfigFields     []ConfigField     `json:"config_fields"`     // 插件配置项声明
-	CredentialFields []CredentialField `json:"credential_fields"` // 凭证字段声明（向后兼容）
-	AccountTypes     []AccountType     `json:"account_types"`     // 账号类型声明（多凭证模式时使用，优先于 CredentialFields）
-	FrontendPages    []FrontendPage    `json:"frontend_pages"`    // 前端页面声明（extension 使用）
+	ID              string           `json:"id"`               // 运行时唯一标识，Core 用于 API 路径、资源挂载、缓存键
+	Name            string           `json:"name"`             // 展示名称
+	Version         string           `json:"version"`          // 语义化版本
+	Description     string           `json:"description"`      // 简要描述
+	Author          string           `json:"author"`           // 作者
+	Type            PluginType       `json:"type"`             // gateway / extension
+	AccountTypes    []AccountType    `json:"account_types"`    // 账号类型声明
+	FrontendPages   []FrontendPage   `json:"frontend_pages"`   // 前端页面声明
+	FrontendWidgets []FrontendWidget `json:"frontend_widgets"` // 前端组件嵌入声明
 }
 
 // PluginContext 核心注入给插件的上下文
+// 数据库连接通过 Config 传递 DSN（config.GetString("db_dsn")），插件自行建连
 type PluginContext interface {
-	// Logger 返回日志记录器
+	// Logger 返回结构化日志记录器
 	Logger() *slog.Logger
 	// Config 返回插件配置
 	Config() PluginConfig
-	// DB 返回数据库连接（extension 插件建表使用）
-	DB() *sql.DB
-	// CoreServices 返回核心服务集合（Advanced/Extension 插件使用）
-	CoreServices() CoreServices
-}
-
-// CoreServices 核心服务集合
-type CoreServices interface {
-	Scheduler() SchedulerService
-	Concurrency() ConcurrencyService
-	RateLimit() RateLimitService
-	Billing() BillingService
 }
 
 // ConfigWatcher 可选接口，支持配置热更新的插件实现
 type ConfigWatcher interface {
 	OnConfigUpdate(config PluginConfig) error
-}
-
-// AccountValidator 可选接口，支持凭证验证的网关插件实现
-type AccountValidator interface {
-	ValidateCredentials(ctx context.Context, credentials map[string]string) error
 }
 
 // WebAssetsProvider 可选接口，插件实现此接口可提供前端静态资源

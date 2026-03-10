@@ -2,51 +2,49 @@ package sdk
 
 import "net/http"
 
-// Account 上游 AI 账户（核心调度后传给插件）
+// Account 上游账户（Core 调度后传给插件的最小视图）
 type Account struct {
-	ID             int64             `json:"id"`
-	Name           string            `json:"name"`
-	Platform       string            `json:"platform"`
-	Credentials    map[string]string `json:"credentials"`     // JSONB 透传
-	ProxyURL       string            `json:"proxy_url"`
-	RateMultiplier float64           `json:"rate_multiplier"`
-	MaxConcurrency int               `json:"max_concurrency"`
+	ID          int64             `json:"id"`
+	Name        string            `json:"name"`
+	Platform    string            `json:"platform"`
+	Type        string            `json:"type"`        // 账号类型（对应 AccountType.Key，如 "apikey"、"oauth"）
+	Credentials map[string]string `json:"credentials"` // JSONB 透传，结构由 Type 决定
+	ProxyURL    string            `json:"proxy_url"`
 }
 
-// ModelInfo 模型信息（插件声明，核心缓存用于计费）
+// ModelInfo 模型信息（插件声明，Core 缓存用于计费）
 type ModelInfo struct {
-	ID          string  `json:"id"`           // 如 "claude-opus-4-20250514"
-	Name        string  `json:"name"`         // 显示名 "Claude Opus 4"
+	ID          string  `json:"id"`   // 如 "claude-opus-4-20250514"
+	Name        string  `json:"name"` // 显示名 "Claude Opus 4"
 	MaxTokens   int     `json:"max_tokens"`
 	InputPrice  float64 `json:"input_price"`  // 每百万 input token 价格（USD）
 	OutputPrice float64 `json:"output_price"` // 每百万 output token 价格（USD）
 	CachePrice  float64 `json:"cache_price"`  // 每百万 cache token 价格（USD）
 }
 
-// RouteDefinition 路由声明（Simple 网关插件使用）
+// RouteDefinition 路由声明（网关插件使用）
 type RouteDefinition struct {
-	Method      string `json:"method"`      // "GET", "POST" 等
-	Path        string `json:"path"`        // 如 "/v1/messages"
+	Method      string `json:"method"` // "GET", "POST" 等
+	Path        string `json:"path"`   // 如 "/v1/chat/completions"
 	Description string `json:"description"`
 }
 
-// RouteRegistrar 路由注册器（Advanced/Extension 插件使用）
+// RouteRegistrar 路由注册器（扩展插件使用）
 type RouteRegistrar interface {
 	Handle(method, path string, handler http.HandlerFunc)
 	Group(prefix string) RouteRegistrar
 }
 
-// CredentialField 凭证字段声明（前端据此渲染账号管理表单）
+// CredentialField 凭证字段声明
 type CredentialField struct {
 	Key         string `json:"key"`
 	Label       string `json:"label"`
-	Type        string `json:"type"`        // "text", "password", "textarea", "select"
+	Type        string `json:"type"` // "text", "password", "textarea", "select"
 	Required    bool   `json:"required"`
 	Placeholder string `json:"placeholder"`
 }
 
-// AccountType 账号类型声明（插件声明多种凭证模式时使用）
-// 前端根据此信息渲染账号类型选择器和对应的凭证表单
+// AccountType 账号类型声明
 type AccountType struct {
 	Key         string            `json:"key"`         // 类型标识，如 "apikey", "oauth"
 	Label       string            `json:"label"`       // 显示名称
@@ -54,16 +52,7 @@ type AccountType struct {
 	Fields      []CredentialField `json:"fields"`      // 该类型的凭证字段
 }
 
-// ConfigField 配置项声明（前端据此渲染插件配置表单）
-type ConfigField struct {
-	Key         string `json:"key"`
-	Type        string `json:"type"`        // "string", "int", "bool", "duration", "select", "textarea"
-	Default     string `json:"default"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
-}
-
-// FrontendPage 前端页面声明（extension 插件使用）
+// FrontendPage 前端独立页面声明
 type FrontendPage struct {
 	Path        string `json:"path"`
 	Title       string `json:"title"`
@@ -71,40 +60,25 @@ type FrontendPage struct {
 	Description string `json:"description"`
 }
 
-// UsageLog 使用记录（插件上报给核心）
-type UsageLog struct {
-	UserID           int64   `json:"user_id"`
-	APIKeyID         int64   `json:"api_key_id"`
-	AccountID        int64   `json:"account_id"`
-	GroupID          int64   `json:"group_id"`
-	Platform         string  `json:"platform"`
-	Model            string  `json:"model"`
-	InputTokens      int     `json:"input_tokens"`
-	OutputTokens     int     `json:"output_tokens"`
-	CacheTokens      int     `json:"cache_tokens"`
-	InputCost        float64 `json:"input_cost"`
-	OutputCost       float64 `json:"output_cost"`
-	CacheCost        float64 `json:"cache_cost"`
-	TotalCost        float64 `json:"total_cost"`
-	ActualCost       float64 `json:"actual_cost"`
-	Stream           bool    `json:"stream"`
-	DurationMs       int64   `json:"duration_ms"`
-	FirstTokenMs     int64   `json:"first_token_ms"`
-	UserAgent        string  `json:"user_agent"`
-	IPAddress        string  `json:"ip_address"`
+// 前端组件插槽常量
+const (
+	SlotAccountForm   = "account-form"   // 添加/编辑账号表单
+	SlotAccountDetail = "account-detail" // 账号详情/用量展示
+)
+
+// FrontendWidget 前端组件嵌入声明
+type FrontendWidget struct {
+	Slot      string `json:"slot"`       // 插槽标识（如 SlotAccountForm）
+	EntryFile string `json:"entry_file"` // JS 入口文件路径
+	Title     string `json:"title"`      // 组件标题
 }
 
-// ScheduleRequest 调度请求
-type ScheduleRequest struct {
-	Platform  string `json:"platform"`
-	Model     string `json:"model"`
-	UserID    int64  `json:"user_id"`
-	GroupID   int64  `json:"group_id"`
-	SessionID string `json:"session_id"` // 粘性会话 ID
-}
-
-// AccountSelection 负载感知调度结果
-type AccountSelection struct {
-	Account  *Account `json:"account"`
-	LoadRate float64  `json:"load_rate"` // 当前负载率
+// QuotaInfo 账号额度信息
+type QuotaInfo struct {
+	Total     float64           `json:"total"`
+	Used      float64           `json:"used"`
+	Remaining float64           `json:"remaining"`
+	Currency  string            `json:"currency"`   // 如 "USD"
+	ExpiresAt string            `json:"expires_at"` // ISO 8601 格式
+	Extra     map[string]string `json:"extra"`      // 扩展字段
 }

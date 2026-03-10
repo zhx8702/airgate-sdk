@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.0
 // - protoc             v3.21.12
-// source: proto/plugin.proto
+// source: plugin.proto
 
 package proto
 
@@ -271,89 +271,86 @@ var PluginService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/plugin.proto",
+	Metadata: "plugin.proto",
 }
 
 const (
-	SimpleGatewayService_GetPlatform_FullMethodName         = "/airgate.plugin.v1.SimpleGatewayService/GetPlatform"
-	SimpleGatewayService_GetModels_FullMethodName           = "/airgate.plugin.v1.SimpleGatewayService/GetModels"
-	SimpleGatewayService_GetRoutes_FullMethodName           = "/airgate.plugin.v1.SimpleGatewayService/GetRoutes"
-	SimpleGatewayService_Forward_FullMethodName             = "/airgate.plugin.v1.SimpleGatewayService/Forward"
-	SimpleGatewayService_ForwardStream_FullMethodName       = "/airgate.plugin.v1.SimpleGatewayService/ForwardStream"
-	SimpleGatewayService_ValidateCredentials_FullMethodName = "/airgate.plugin.v1.SimpleGatewayService/ValidateCredentials"
-	SimpleGatewayService_HandleWebSocket_FullMethodName     = "/airgate.plugin.v1.SimpleGatewayService/HandleWebSocket"
-	SimpleGatewayService_StartOAuth_FullMethodName          = "/airgate.plugin.v1.SimpleGatewayService/StartOAuth"
-	SimpleGatewayService_HandleOAuthCallback_FullMethodName = "/airgate.plugin.v1.SimpleGatewayService/HandleOAuthCallback"
+	GatewayService_GetPlatform_FullMethodName     = "/airgate.plugin.v1.GatewayService/GetPlatform"
+	GatewayService_GetModels_FullMethodName       = "/airgate.plugin.v1.GatewayService/GetModels"
+	GatewayService_GetRoutes_FullMethodName       = "/airgate.plugin.v1.GatewayService/GetRoutes"
+	GatewayService_Forward_FullMethodName         = "/airgate.plugin.v1.GatewayService/Forward"
+	GatewayService_ForwardStream_FullMethodName   = "/airgate.plugin.v1.GatewayService/ForwardStream"
+	GatewayService_ValidateAccount_FullMethodName = "/airgate.plugin.v1.GatewayService/ValidateAccount"
+	GatewayService_QueryQuota_FullMethodName      = "/airgate.plugin.v1.GatewayService/QueryQuota"
+	GatewayService_HandleWebSocket_FullMethodName = "/airgate.plugin.v1.GatewayService/HandleWebSocket"
 )
 
-// SimpleGatewayServiceClient is the client API for SimpleGatewayService service.
+// GatewayServiceClient is the client API for GatewayService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type SimpleGatewayServiceClient interface {
+type GatewayServiceClient interface {
 	GetPlatform(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*StringResponse, error)
 	GetModels(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ModelsResponse, error)
 	GetRoutes(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*RoutesResponse, error)
 	Forward(ctx context.Context, in *ForwardRequest, opts ...grpc.CallOption) (*ForwardResult, error)
 	ForwardStream(ctx context.Context, in *ForwardRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ForwardChunk], error)
-	ValidateCredentials(ctx context.Context, in *CredentialsRequest, opts ...grpc.CallOption) (*Empty, error)
-	// WebSocket 双向流（可选能力，核心通过路由声明检测插件是否支持）
+	ValidateAccount(ctx context.Context, in *CredentialsRequest, opts ...grpc.CallOption) (*Empty, error)
+	QueryQuota(ctx context.Context, in *CredentialsRequest, opts ...grpc.CallOption) (*QuotaInfoResponse, error)
+	// WebSocket 双向流
 	HandleWebSocket(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WebSocketFrame, WebSocketFrame], error)
-	// OAuth 授权（可选能力，核心通过类型断言检测插件是否支持）
-	StartOAuth(ctx context.Context, in *StartOAuthRequest, opts ...grpc.CallOption) (*StartOAuthResponse, error)
-	HandleOAuthCallback(ctx context.Context, in *OAuthCallbackRequest, opts ...grpc.CallOption) (*OAuthCallbackResponse, error)
 }
 
-type simpleGatewayServiceClient struct {
+type gatewayServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewSimpleGatewayServiceClient(cc grpc.ClientConnInterface) SimpleGatewayServiceClient {
-	return &simpleGatewayServiceClient{cc}
+func NewGatewayServiceClient(cc grpc.ClientConnInterface) GatewayServiceClient {
+	return &gatewayServiceClient{cc}
 }
 
-func (c *simpleGatewayServiceClient) GetPlatform(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*StringResponse, error) {
+func (c *gatewayServiceClient) GetPlatform(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*StringResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(StringResponse)
-	err := c.cc.Invoke(ctx, SimpleGatewayService_GetPlatform_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, GatewayService_GetPlatform_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *simpleGatewayServiceClient) GetModels(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ModelsResponse, error) {
+func (c *gatewayServiceClient) GetModels(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ModelsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ModelsResponse)
-	err := c.cc.Invoke(ctx, SimpleGatewayService_GetModels_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, GatewayService_GetModels_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *simpleGatewayServiceClient) GetRoutes(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*RoutesResponse, error) {
+func (c *gatewayServiceClient) GetRoutes(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*RoutesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RoutesResponse)
-	err := c.cc.Invoke(ctx, SimpleGatewayService_GetRoutes_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, GatewayService_GetRoutes_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *simpleGatewayServiceClient) Forward(ctx context.Context, in *ForwardRequest, opts ...grpc.CallOption) (*ForwardResult, error) {
+func (c *gatewayServiceClient) Forward(ctx context.Context, in *ForwardRequest, opts ...grpc.CallOption) (*ForwardResult, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ForwardResult)
-	err := c.cc.Invoke(ctx, SimpleGatewayService_Forward_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, GatewayService_Forward_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *simpleGatewayServiceClient) ForwardStream(ctx context.Context, in *ForwardRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ForwardChunk], error) {
+func (c *gatewayServiceClient) ForwardStream(ctx context.Context, in *ForwardRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[ForwardChunk], error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SimpleGatewayService_ServiceDesc.Streams[0], SimpleGatewayService_ForwardStream_FullMethodName, cOpts...)
+	stream, err := c.cc.NewStream(ctx, &GatewayService_ServiceDesc.Streams[0], GatewayService_ForwardStream_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -368,21 +365,31 @@ func (c *simpleGatewayServiceClient) ForwardStream(ctx context.Context, in *Forw
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SimpleGatewayService_ForwardStreamClient = grpc.ServerStreamingClient[ForwardChunk]
+type GatewayService_ForwardStreamClient = grpc.ServerStreamingClient[ForwardChunk]
 
-func (c *simpleGatewayServiceClient) ValidateCredentials(ctx context.Context, in *CredentialsRequest, opts ...grpc.CallOption) (*Empty, error) {
+func (c *gatewayServiceClient) ValidateAccount(ctx context.Context, in *CredentialsRequest, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Empty)
-	err := c.cc.Invoke(ctx, SimpleGatewayService_ValidateCredentials_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, GatewayService_ValidateAccount_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *simpleGatewayServiceClient) HandleWebSocket(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WebSocketFrame, WebSocketFrame], error) {
+func (c *gatewayServiceClient) QueryQuota(ctx context.Context, in *CredentialsRequest, opts ...grpc.CallOption) (*QuotaInfoResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &SimpleGatewayService_ServiceDesc.Streams[1], SimpleGatewayService_HandleWebSocket_FullMethodName, cOpts...)
+	out := new(QuotaInfoResponse)
+	err := c.cc.Invoke(ctx, GatewayService_QueryQuota_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayServiceClient) HandleWebSocket(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[WebSocketFrame, WebSocketFrame], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &GatewayService_ServiceDesc.Streams[1], GatewayService_HandleWebSocket_FullMethodName, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -391,734 +398,248 @@ func (c *simpleGatewayServiceClient) HandleWebSocket(ctx context.Context, opts .
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SimpleGatewayService_HandleWebSocketClient = grpc.BidiStreamingClient[WebSocketFrame, WebSocketFrame]
+type GatewayService_HandleWebSocketClient = grpc.BidiStreamingClient[WebSocketFrame, WebSocketFrame]
 
-func (c *simpleGatewayServiceClient) StartOAuth(ctx context.Context, in *StartOAuthRequest, opts ...grpc.CallOption) (*StartOAuthResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StartOAuthResponse)
-	err := c.cc.Invoke(ctx, SimpleGatewayService_StartOAuth_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *simpleGatewayServiceClient) HandleOAuthCallback(ctx context.Context, in *OAuthCallbackRequest, opts ...grpc.CallOption) (*OAuthCallbackResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(OAuthCallbackResponse)
-	err := c.cc.Invoke(ctx, SimpleGatewayService_HandleOAuthCallback_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// SimpleGatewayServiceServer is the server API for SimpleGatewayService service.
-// All implementations must embed UnimplementedSimpleGatewayServiceServer
+// GatewayServiceServer is the server API for GatewayService service.
+// All implementations must embed UnimplementedGatewayServiceServer
 // for forward compatibility.
-type SimpleGatewayServiceServer interface {
+type GatewayServiceServer interface {
 	GetPlatform(context.Context, *Empty) (*StringResponse, error)
 	GetModels(context.Context, *Empty) (*ModelsResponse, error)
 	GetRoutes(context.Context, *Empty) (*RoutesResponse, error)
 	Forward(context.Context, *ForwardRequest) (*ForwardResult, error)
 	ForwardStream(*ForwardRequest, grpc.ServerStreamingServer[ForwardChunk]) error
-	ValidateCredentials(context.Context, *CredentialsRequest) (*Empty, error)
-	// WebSocket 双向流（可选能力，核心通过路由声明检测插件是否支持）
+	ValidateAccount(context.Context, *CredentialsRequest) (*Empty, error)
+	QueryQuota(context.Context, *CredentialsRequest) (*QuotaInfoResponse, error)
+	// WebSocket 双向流
 	HandleWebSocket(grpc.BidiStreamingServer[WebSocketFrame, WebSocketFrame]) error
-	// OAuth 授权（可选能力，核心通过类型断言检测插件是否支持）
-	StartOAuth(context.Context, *StartOAuthRequest) (*StartOAuthResponse, error)
-	HandleOAuthCallback(context.Context, *OAuthCallbackRequest) (*OAuthCallbackResponse, error)
-	mustEmbedUnimplementedSimpleGatewayServiceServer()
+	mustEmbedUnimplementedGatewayServiceServer()
 }
 
-// UnimplementedSimpleGatewayServiceServer must be embedded to have
+// UnimplementedGatewayServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedSimpleGatewayServiceServer struct{}
+type UnimplementedGatewayServiceServer struct{}
 
-func (UnimplementedSimpleGatewayServiceServer) GetPlatform(context.Context, *Empty) (*StringResponse, error) {
+func (UnimplementedGatewayServiceServer) GetPlatform(context.Context, *Empty) (*StringResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPlatform not implemented")
 }
-func (UnimplementedSimpleGatewayServiceServer) GetModels(context.Context, *Empty) (*ModelsResponse, error) {
+func (UnimplementedGatewayServiceServer) GetModels(context.Context, *Empty) (*ModelsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetModels not implemented")
 }
-func (UnimplementedSimpleGatewayServiceServer) GetRoutes(context.Context, *Empty) (*RoutesResponse, error) {
+func (UnimplementedGatewayServiceServer) GetRoutes(context.Context, *Empty) (*RoutesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetRoutes not implemented")
 }
-func (UnimplementedSimpleGatewayServiceServer) Forward(context.Context, *ForwardRequest) (*ForwardResult, error) {
+func (UnimplementedGatewayServiceServer) Forward(context.Context, *ForwardRequest) (*ForwardResult, error) {
 	return nil, status.Error(codes.Unimplemented, "method Forward not implemented")
 }
-func (UnimplementedSimpleGatewayServiceServer) ForwardStream(*ForwardRequest, grpc.ServerStreamingServer[ForwardChunk]) error {
+func (UnimplementedGatewayServiceServer) ForwardStream(*ForwardRequest, grpc.ServerStreamingServer[ForwardChunk]) error {
 	return status.Error(codes.Unimplemented, "method ForwardStream not implemented")
 }
-func (UnimplementedSimpleGatewayServiceServer) ValidateCredentials(context.Context, *CredentialsRequest) (*Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "method ValidateCredentials not implemented")
+func (UnimplementedGatewayServiceServer) ValidateAccount(context.Context, *CredentialsRequest) (*Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method ValidateAccount not implemented")
 }
-func (UnimplementedSimpleGatewayServiceServer) HandleWebSocket(grpc.BidiStreamingServer[WebSocketFrame, WebSocketFrame]) error {
+func (UnimplementedGatewayServiceServer) QueryQuota(context.Context, *CredentialsRequest) (*QuotaInfoResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method QueryQuota not implemented")
+}
+func (UnimplementedGatewayServiceServer) HandleWebSocket(grpc.BidiStreamingServer[WebSocketFrame, WebSocketFrame]) error {
 	return status.Error(codes.Unimplemented, "method HandleWebSocket not implemented")
 }
-func (UnimplementedSimpleGatewayServiceServer) StartOAuth(context.Context, *StartOAuthRequest) (*StartOAuthResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method StartOAuth not implemented")
-}
-func (UnimplementedSimpleGatewayServiceServer) HandleOAuthCallback(context.Context, *OAuthCallbackRequest) (*OAuthCallbackResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method HandleOAuthCallback not implemented")
-}
-func (UnimplementedSimpleGatewayServiceServer) mustEmbedUnimplementedSimpleGatewayServiceServer() {}
-func (UnimplementedSimpleGatewayServiceServer) testEmbeddedByValue()                              {}
+func (UnimplementedGatewayServiceServer) mustEmbedUnimplementedGatewayServiceServer() {}
+func (UnimplementedGatewayServiceServer) testEmbeddedByValue()                        {}
 
-// UnsafeSimpleGatewayServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to SimpleGatewayServiceServer will
+// UnsafeGatewayServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to GatewayServiceServer will
 // result in compilation errors.
-type UnsafeSimpleGatewayServiceServer interface {
-	mustEmbedUnimplementedSimpleGatewayServiceServer()
+type UnsafeGatewayServiceServer interface {
+	mustEmbedUnimplementedGatewayServiceServer()
 }
 
-func RegisterSimpleGatewayServiceServer(s grpc.ServiceRegistrar, srv SimpleGatewayServiceServer) {
-	// If the following call panics, it indicates UnimplementedSimpleGatewayServiceServer was
+func RegisterGatewayServiceServer(s grpc.ServiceRegistrar, srv GatewayServiceServer) {
+	// If the following call panics, it indicates UnimplementedGatewayServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&SimpleGatewayService_ServiceDesc, srv)
+	s.RegisterService(&GatewayService_ServiceDesc, srv)
 }
 
-func _SimpleGatewayService_GetPlatform_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _GatewayService_GetPlatform_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SimpleGatewayServiceServer).GetPlatform(ctx, in)
+		return srv.(GatewayServiceServer).GetPlatform(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SimpleGatewayService_GetPlatform_FullMethodName,
+		FullMethod: GatewayService_GetPlatform_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SimpleGatewayServiceServer).GetPlatform(ctx, req.(*Empty))
+		return srv.(GatewayServiceServer).GetPlatform(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SimpleGatewayService_GetModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _GatewayService_GetModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SimpleGatewayServiceServer).GetModels(ctx, in)
+		return srv.(GatewayServiceServer).GetModels(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SimpleGatewayService_GetModels_FullMethodName,
+		FullMethod: GatewayService_GetModels_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SimpleGatewayServiceServer).GetModels(ctx, req.(*Empty))
+		return srv.(GatewayServiceServer).GetModels(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SimpleGatewayService_GetRoutes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _GatewayService_GetRoutes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SimpleGatewayServiceServer).GetRoutes(ctx, in)
+		return srv.(GatewayServiceServer).GetRoutes(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SimpleGatewayService_GetRoutes_FullMethodName,
+		FullMethod: GatewayService_GetRoutes_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SimpleGatewayServiceServer).GetRoutes(ctx, req.(*Empty))
+		return srv.(GatewayServiceServer).GetRoutes(ctx, req.(*Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SimpleGatewayService_Forward_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _GatewayService_Forward_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ForwardRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SimpleGatewayServiceServer).Forward(ctx, in)
+		return srv.(GatewayServiceServer).Forward(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SimpleGatewayService_Forward_FullMethodName,
+		FullMethod: GatewayService_Forward_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SimpleGatewayServiceServer).Forward(ctx, req.(*ForwardRequest))
+		return srv.(GatewayServiceServer).Forward(ctx, req.(*ForwardRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SimpleGatewayService_ForwardStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+func _GatewayService_ForwardStream_Handler(srv interface{}, stream grpc.ServerStream) error {
 	m := new(ForwardRequest)
 	if err := stream.RecvMsg(m); err != nil {
 		return err
 	}
-	return srv.(SimpleGatewayServiceServer).ForwardStream(m, &grpc.GenericServerStream[ForwardRequest, ForwardChunk]{ServerStream: stream})
+	return srv.(GatewayServiceServer).ForwardStream(m, &grpc.GenericServerStream[ForwardRequest, ForwardChunk]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SimpleGatewayService_ForwardStreamServer = grpc.ServerStreamingServer[ForwardChunk]
+type GatewayService_ForwardStreamServer = grpc.ServerStreamingServer[ForwardChunk]
 
-func _SimpleGatewayService_ValidateCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _GatewayService_ValidateAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CredentialsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SimpleGatewayServiceServer).ValidateCredentials(ctx, in)
+		return srv.(GatewayServiceServer).ValidateAccount(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SimpleGatewayService_ValidateCredentials_FullMethodName,
+		FullMethod: GatewayService_ValidateAccount_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SimpleGatewayServiceServer).ValidateCredentials(ctx, req.(*CredentialsRequest))
+		return srv.(GatewayServiceServer).ValidateAccount(ctx, req.(*CredentialsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SimpleGatewayService_HandleWebSocket_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(SimpleGatewayServiceServer).HandleWebSocket(&grpc.GenericServerStream[WebSocketFrame, WebSocketFrame]{ServerStream: stream})
+func _GatewayService_QueryQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CredentialsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServiceServer).QueryQuota(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayService_QueryQuota_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServiceServer).QueryQuota(ctx, req.(*CredentialsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GatewayService_HandleWebSocket_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(GatewayServiceServer).HandleWebSocket(&grpc.GenericServerStream[WebSocketFrame, WebSocketFrame]{ServerStream: stream})
 }
 
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type SimpleGatewayService_HandleWebSocketServer = grpc.BidiStreamingServer[WebSocketFrame, WebSocketFrame]
+type GatewayService_HandleWebSocketServer = grpc.BidiStreamingServer[WebSocketFrame, WebSocketFrame]
 
-func _SimpleGatewayService_StartOAuth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(StartOAuthRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SimpleGatewayServiceServer).StartOAuth(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SimpleGatewayService_StartOAuth_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SimpleGatewayServiceServer).StartOAuth(ctx, req.(*StartOAuthRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _SimpleGatewayService_HandleOAuthCallback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(OAuthCallbackRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SimpleGatewayServiceServer).HandleOAuthCallback(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SimpleGatewayService_HandleOAuthCallback_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SimpleGatewayServiceServer).HandleOAuthCallback(ctx, req.(*OAuthCallbackRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// SimpleGatewayService_ServiceDesc is the grpc.ServiceDesc for SimpleGatewayService service.
+// GatewayService_ServiceDesc is the grpc.ServiceDesc for GatewayService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var SimpleGatewayService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "airgate.plugin.v1.SimpleGatewayService",
-	HandlerType: (*SimpleGatewayServiceServer)(nil),
+var GatewayService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "airgate.plugin.v1.GatewayService",
+	HandlerType: (*GatewayServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "GetPlatform",
-			Handler:    _SimpleGatewayService_GetPlatform_Handler,
+			Handler:    _GatewayService_GetPlatform_Handler,
 		},
 		{
 			MethodName: "GetModels",
-			Handler:    _SimpleGatewayService_GetModels_Handler,
+			Handler:    _GatewayService_GetModels_Handler,
 		},
 		{
 			MethodName: "GetRoutes",
-			Handler:    _SimpleGatewayService_GetRoutes_Handler,
+			Handler:    _GatewayService_GetRoutes_Handler,
 		},
 		{
 			MethodName: "Forward",
-			Handler:    _SimpleGatewayService_Forward_Handler,
+			Handler:    _GatewayService_Forward_Handler,
 		},
 		{
-			MethodName: "ValidateCredentials",
-			Handler:    _SimpleGatewayService_ValidateCredentials_Handler,
+			MethodName: "ValidateAccount",
+			Handler:    _GatewayService_ValidateAccount_Handler,
 		},
 		{
-			MethodName: "StartOAuth",
-			Handler:    _SimpleGatewayService_StartOAuth_Handler,
-		},
-		{
-			MethodName: "HandleOAuthCallback",
-			Handler:    _SimpleGatewayService_HandleOAuthCallback_Handler,
+			MethodName: "QueryQuota",
+			Handler:    _GatewayService_QueryQuota_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "ForwardStream",
-			Handler:       _SimpleGatewayService_ForwardStream_Handler,
+			Handler:       _GatewayService_ForwardStream_Handler,
 			ServerStreams: true,
 		},
 		{
 			StreamName:    "HandleWebSocket",
-			Handler:       _SimpleGatewayService_HandleWebSocket_Handler,
+			Handler:       _GatewayService_HandleWebSocket_Handler,
 			ServerStreams: true,
 			ClientStreams: true,
 		},
 	},
-	Metadata: "proto/plugin.proto",
-}
-
-const (
-	AdvancedGatewayService_GetPlatform_FullMethodName             = "/airgate.plugin.v1.AdvancedGatewayService/GetPlatform"
-	AdvancedGatewayService_GetModels_FullMethodName               = "/airgate.plugin.v1.AdvancedGatewayService/GetModels"
-	AdvancedGatewayService_GetAdvancedServiceNeeds_FullMethodName = "/airgate.plugin.v1.AdvancedGatewayService/GetAdvancedServiceNeeds"
-	AdvancedGatewayService_HandleRequest_FullMethodName           = "/airgate.plugin.v1.AdvancedGatewayService/HandleRequest"
-	AdvancedGatewayService_HandleStreamRequest_FullMethodName     = "/airgate.plugin.v1.AdvancedGatewayService/HandleStreamRequest"
-)
-
-// AdvancedGatewayServiceClient is the client API for AdvancedGatewayService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type AdvancedGatewayServiceClient interface {
-	GetPlatform(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*StringResponse, error)
-	GetModels(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ModelsResponse, error)
-	GetAdvancedServiceNeeds(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AdvancedServiceNeedsResponse, error)
-	// HTTP 请求由核心代理到插件
-	HandleRequest(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (*HttpResponse, error)
-	HandleStreamRequest(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[HttpResponseChunk], error)
-}
-
-type advancedGatewayServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewAdvancedGatewayServiceClient(cc grpc.ClientConnInterface) AdvancedGatewayServiceClient {
-	return &advancedGatewayServiceClient{cc}
-}
-
-func (c *advancedGatewayServiceClient) GetPlatform(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*StringResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(StringResponse)
-	err := c.cc.Invoke(ctx, AdvancedGatewayService_GetPlatform_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *advancedGatewayServiceClient) GetModels(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ModelsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ModelsResponse)
-	err := c.cc.Invoke(ctx, AdvancedGatewayService_GetModels_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *advancedGatewayServiceClient) GetAdvancedServiceNeeds(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AdvancedServiceNeedsResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AdvancedServiceNeedsResponse)
-	err := c.cc.Invoke(ctx, AdvancedGatewayService_GetAdvancedServiceNeeds_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *advancedGatewayServiceClient) HandleRequest(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (*HttpResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HttpResponse)
-	err := c.cc.Invoke(ctx, AdvancedGatewayService_HandleRequest_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *advancedGatewayServiceClient) HandleStreamRequest(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[HttpResponseChunk], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &AdvancedGatewayService_ServiceDesc.Streams[0], AdvancedGatewayService_HandleStreamRequest_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[HttpRequest, HttpResponseChunk]{ClientStream: stream}
-	if err := x.ClientStream.SendMsg(in); err != nil {
-		return nil, err
-	}
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type AdvancedGatewayService_HandleStreamRequestClient = grpc.ServerStreamingClient[HttpResponseChunk]
-
-// AdvancedGatewayServiceServer is the server API for AdvancedGatewayService service.
-// All implementations must embed UnimplementedAdvancedGatewayServiceServer
-// for forward compatibility.
-type AdvancedGatewayServiceServer interface {
-	GetPlatform(context.Context, *Empty) (*StringResponse, error)
-	GetModels(context.Context, *Empty) (*ModelsResponse, error)
-	GetAdvancedServiceNeeds(context.Context, *Empty) (*AdvancedServiceNeedsResponse, error)
-	// HTTP 请求由核心代理到插件
-	HandleRequest(context.Context, *HttpRequest) (*HttpResponse, error)
-	HandleStreamRequest(*HttpRequest, grpc.ServerStreamingServer[HttpResponseChunk]) error
-	mustEmbedUnimplementedAdvancedGatewayServiceServer()
-}
-
-// UnimplementedAdvancedGatewayServiceServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
-type UnimplementedAdvancedGatewayServiceServer struct{}
-
-func (UnimplementedAdvancedGatewayServiceServer) GetPlatform(context.Context, *Empty) (*StringResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetPlatform not implemented")
-}
-func (UnimplementedAdvancedGatewayServiceServer) GetModels(context.Context, *Empty) (*ModelsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetModels not implemented")
-}
-func (UnimplementedAdvancedGatewayServiceServer) GetAdvancedServiceNeeds(context.Context, *Empty) (*AdvancedServiceNeedsResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetAdvancedServiceNeeds not implemented")
-}
-func (UnimplementedAdvancedGatewayServiceServer) HandleRequest(context.Context, *HttpRequest) (*HttpResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method HandleRequest not implemented")
-}
-func (UnimplementedAdvancedGatewayServiceServer) HandleStreamRequest(*HttpRequest, grpc.ServerStreamingServer[HttpResponseChunk]) error {
-	return status.Error(codes.Unimplemented, "method HandleStreamRequest not implemented")
-}
-func (UnimplementedAdvancedGatewayServiceServer) mustEmbedUnimplementedAdvancedGatewayServiceServer() {
-}
-func (UnimplementedAdvancedGatewayServiceServer) testEmbeddedByValue() {}
-
-// UnsafeAdvancedGatewayServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to AdvancedGatewayServiceServer will
-// result in compilation errors.
-type UnsafeAdvancedGatewayServiceServer interface {
-	mustEmbedUnimplementedAdvancedGatewayServiceServer()
-}
-
-func RegisterAdvancedGatewayServiceServer(s grpc.ServiceRegistrar, srv AdvancedGatewayServiceServer) {
-	// If the following call panics, it indicates UnimplementedAdvancedGatewayServiceServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&AdvancedGatewayService_ServiceDesc, srv)
-}
-
-func _AdvancedGatewayService_GetPlatform_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdvancedGatewayServiceServer).GetPlatform(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdvancedGatewayService_GetPlatform_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdvancedGatewayServiceServer).GetPlatform(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdvancedGatewayService_GetModels_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdvancedGatewayServiceServer).GetModels(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdvancedGatewayService_GetModels_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdvancedGatewayServiceServer).GetModels(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdvancedGatewayService_GetAdvancedServiceNeeds_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Empty)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdvancedGatewayServiceServer).GetAdvancedServiceNeeds(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdvancedGatewayService_GetAdvancedServiceNeeds_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdvancedGatewayServiceServer).GetAdvancedServiceNeeds(ctx, req.(*Empty))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdvancedGatewayService_HandleRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HttpRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdvancedGatewayServiceServer).HandleRequest(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdvancedGatewayService_HandleRequest_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdvancedGatewayServiceServer).HandleRequest(ctx, req.(*HttpRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdvancedGatewayService_HandleStreamRequest_Handler(srv interface{}, stream grpc.ServerStream) error {
-	m := new(HttpRequest)
-	if err := stream.RecvMsg(m); err != nil {
-		return err
-	}
-	return srv.(AdvancedGatewayServiceServer).HandleStreamRequest(m, &grpc.GenericServerStream[HttpRequest, HttpResponseChunk]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type AdvancedGatewayService_HandleStreamRequestServer = grpc.ServerStreamingServer[HttpResponseChunk]
-
-// AdvancedGatewayService_ServiceDesc is the grpc.ServiceDesc for AdvancedGatewayService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var AdvancedGatewayService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "airgate.plugin.v1.AdvancedGatewayService",
-	HandlerType: (*AdvancedGatewayServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "GetPlatform",
-			Handler:    _AdvancedGatewayService_GetPlatform_Handler,
-		},
-		{
-			MethodName: "GetModels",
-			Handler:    _AdvancedGatewayService_GetModels_Handler,
-		},
-		{
-			MethodName: "GetAdvancedServiceNeeds",
-			Handler:    _AdvancedGatewayService_GetAdvancedServiceNeeds_Handler,
-		},
-		{
-			MethodName: "HandleRequest",
-			Handler:    _AdvancedGatewayService_HandleRequest_Handler,
-		},
-	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "HandleStreamRequest",
-			Handler:       _AdvancedGatewayService_HandleStreamRequest_Handler,
-			ServerStreams: true,
-		},
-	},
-	Metadata: "proto/plugin.proto",
-}
-
-const (
-	PaymentService_CreateOrder_FullMethodName    = "/airgate.plugin.v1.PaymentService/CreateOrder"
-	PaymentService_QueryOrder_FullMethodName     = "/airgate.plugin.v1.PaymentService/QueryOrder"
-	PaymentService_HandleCallback_FullMethodName = "/airgate.plugin.v1.PaymentService/HandleCallback"
-)
-
-// PaymentServiceClient is the client API for PaymentService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type PaymentServiceClient interface {
-	CreateOrder(ctx context.Context, in *CreateOrderRequest, opts ...grpc.CallOption) (*PaymentOrderResponse, error)
-	QueryOrder(ctx context.Context, in *QueryOrderRequest, opts ...grpc.CallOption) (*PaymentOrderResponse, error)
-	HandleCallback(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (*HttpResponse, error)
-}
-
-type paymentServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewPaymentServiceClient(cc grpc.ClientConnInterface) PaymentServiceClient {
-	return &paymentServiceClient{cc}
-}
-
-func (c *paymentServiceClient) CreateOrder(ctx context.Context, in *CreateOrderRequest, opts ...grpc.CallOption) (*PaymentOrderResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PaymentOrderResponse)
-	err := c.cc.Invoke(ctx, PaymentService_CreateOrder_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *paymentServiceClient) QueryOrder(ctx context.Context, in *QueryOrderRequest, opts ...grpc.CallOption) (*PaymentOrderResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PaymentOrderResponse)
-	err := c.cc.Invoke(ctx, PaymentService_QueryOrder_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *paymentServiceClient) HandleCallback(ctx context.Context, in *HttpRequest, opts ...grpc.CallOption) (*HttpResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HttpResponse)
-	err := c.cc.Invoke(ctx, PaymentService_HandleCallback_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// PaymentServiceServer is the server API for PaymentService service.
-// All implementations must embed UnimplementedPaymentServiceServer
-// for forward compatibility.
-type PaymentServiceServer interface {
-	CreateOrder(context.Context, *CreateOrderRequest) (*PaymentOrderResponse, error)
-	QueryOrder(context.Context, *QueryOrderRequest) (*PaymentOrderResponse, error)
-	HandleCallback(context.Context, *HttpRequest) (*HttpResponse, error)
-	mustEmbedUnimplementedPaymentServiceServer()
-}
-
-// UnimplementedPaymentServiceServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
-type UnimplementedPaymentServiceServer struct{}
-
-func (UnimplementedPaymentServiceServer) CreateOrder(context.Context, *CreateOrderRequest) (*PaymentOrderResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method CreateOrder not implemented")
-}
-func (UnimplementedPaymentServiceServer) QueryOrder(context.Context, *QueryOrderRequest) (*PaymentOrderResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method QueryOrder not implemented")
-}
-func (UnimplementedPaymentServiceServer) HandleCallback(context.Context, *HttpRequest) (*HttpResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method HandleCallback not implemented")
-}
-func (UnimplementedPaymentServiceServer) mustEmbedUnimplementedPaymentServiceServer() {}
-func (UnimplementedPaymentServiceServer) testEmbeddedByValue()                        {}
-
-// UnsafePaymentServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to PaymentServiceServer will
-// result in compilation errors.
-type UnsafePaymentServiceServer interface {
-	mustEmbedUnimplementedPaymentServiceServer()
-}
-
-func RegisterPaymentServiceServer(s grpc.ServiceRegistrar, srv PaymentServiceServer) {
-	// If the following call panics, it indicates UnimplementedPaymentServiceServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&PaymentService_ServiceDesc, srv)
-}
-
-func _PaymentService_CreateOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateOrderRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PaymentServiceServer).CreateOrder(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PaymentService_CreateOrder_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaymentServiceServer).CreateOrder(ctx, req.(*CreateOrderRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _PaymentService_QueryOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryOrderRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PaymentServiceServer).QueryOrder(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PaymentService_QueryOrder_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaymentServiceServer).QueryOrder(ctx, req.(*QueryOrderRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _PaymentService_HandleCallback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HttpRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PaymentServiceServer).HandleCallback(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PaymentService_HandleCallback_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PaymentServiceServer).HandleCallback(ctx, req.(*HttpRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// PaymentService_ServiceDesc is the grpc.ServiceDesc for PaymentService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var PaymentService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "airgate.plugin.v1.PaymentService",
-	HandlerType: (*PaymentServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "CreateOrder",
-			Handler:    _PaymentService_CreateOrder_Handler,
-		},
-		{
-			MethodName: "QueryOrder",
-			Handler:    _PaymentService_QueryOrder_Handler,
-		},
-		{
-			MethodName: "HandleCallback",
-			Handler:    _PaymentService_HandleCallback_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/plugin.proto",
+	Metadata: "plugin.proto",
 }
 
 const (
@@ -1340,373 +861,5 @@ var ExtensionService_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "proto/plugin.proto",
-}
-
-const (
-	CoreCallbackService_SelectAccount_FullMethodName           = "/airgate.plugin.v1.CoreCallbackService/SelectAccount"
-	CoreCallbackService_SelectWithLoadAwareness_FullMethodName = "/airgate.plugin.v1.CoreCallbackService/SelectWithLoadAwareness"
-	CoreCallbackService_ReportResult_FullMethodName            = "/airgate.plugin.v1.CoreCallbackService/ReportResult"
-	CoreCallbackService_AcquireSlot_FullMethodName             = "/airgate.plugin.v1.CoreCallbackService/AcquireSlot"
-	CoreCallbackService_ReleaseSlot_FullMethodName             = "/airgate.plugin.v1.CoreCallbackService/ReleaseSlot"
-	CoreCallbackService_CheckRateLimit_FullMethodName          = "/airgate.plugin.v1.CoreCallbackService/CheckRateLimit"
-	CoreCallbackService_RecordUsage_FullMethodName             = "/airgate.plugin.v1.CoreCallbackService/RecordUsage"
-	CoreCallbackService_DeductBalance_FullMethodName           = "/airgate.plugin.v1.CoreCallbackService/DeductBalance"
-)
-
-// CoreCallbackServiceClient is the client API for CoreCallbackService service.
-//
-// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type CoreCallbackServiceClient interface {
-	SelectAccount(ctx context.Context, in *ScheduleRequest, opts ...grpc.CallOption) (*AccountResponse, error)
-	SelectWithLoadAwareness(ctx context.Context, in *ScheduleRequest, opts ...grpc.CallOption) (*AccountSelectionResponse, error)
-	ReportResult(ctx context.Context, in *ReportResultRequest, opts ...grpc.CallOption) (*Empty, error)
-	AcquireSlot(ctx context.Context, in *SlotRequest, opts ...grpc.CallOption) (*SlotResponse, error)
-	ReleaseSlot(ctx context.Context, in *SlotReleaseRequest, opts ...grpc.CallOption) (*Empty, error)
-	CheckRateLimit(ctx context.Context, in *RateLimitRequest, opts ...grpc.CallOption) (*Empty, error)
-	RecordUsage(ctx context.Context, in *UsageLogRequest, opts ...grpc.CallOption) (*Empty, error)
-	DeductBalance(ctx context.Context, in *DeductRequest, opts ...grpc.CallOption) (*Empty, error)
-}
-
-type coreCallbackServiceClient struct {
-	cc grpc.ClientConnInterface
-}
-
-func NewCoreCallbackServiceClient(cc grpc.ClientConnInterface) CoreCallbackServiceClient {
-	return &coreCallbackServiceClient{cc}
-}
-
-func (c *coreCallbackServiceClient) SelectAccount(ctx context.Context, in *ScheduleRequest, opts ...grpc.CallOption) (*AccountResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AccountResponse)
-	err := c.cc.Invoke(ctx, CoreCallbackService_SelectAccount_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *coreCallbackServiceClient) SelectWithLoadAwareness(ctx context.Context, in *ScheduleRequest, opts ...grpc.CallOption) (*AccountSelectionResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(AccountSelectionResponse)
-	err := c.cc.Invoke(ctx, CoreCallbackService_SelectWithLoadAwareness_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *coreCallbackServiceClient) ReportResult(ctx context.Context, in *ReportResultRequest, opts ...grpc.CallOption) (*Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, CoreCallbackService_ReportResult_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *coreCallbackServiceClient) AcquireSlot(ctx context.Context, in *SlotRequest, opts ...grpc.CallOption) (*SlotResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SlotResponse)
-	err := c.cc.Invoke(ctx, CoreCallbackService_AcquireSlot_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *coreCallbackServiceClient) ReleaseSlot(ctx context.Context, in *SlotReleaseRequest, opts ...grpc.CallOption) (*Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, CoreCallbackService_ReleaseSlot_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *coreCallbackServiceClient) CheckRateLimit(ctx context.Context, in *RateLimitRequest, opts ...grpc.CallOption) (*Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, CoreCallbackService_CheckRateLimit_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *coreCallbackServiceClient) RecordUsage(ctx context.Context, in *UsageLogRequest, opts ...grpc.CallOption) (*Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, CoreCallbackService_RecordUsage_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *coreCallbackServiceClient) DeductBalance(ctx context.Context, in *DeductRequest, opts ...grpc.CallOption) (*Empty, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Empty)
-	err := c.cc.Invoke(ctx, CoreCallbackService_DeductBalance_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// CoreCallbackServiceServer is the server API for CoreCallbackService service.
-// All implementations must embed UnimplementedCoreCallbackServiceServer
-// for forward compatibility.
-type CoreCallbackServiceServer interface {
-	SelectAccount(context.Context, *ScheduleRequest) (*AccountResponse, error)
-	SelectWithLoadAwareness(context.Context, *ScheduleRequest) (*AccountSelectionResponse, error)
-	ReportResult(context.Context, *ReportResultRequest) (*Empty, error)
-	AcquireSlot(context.Context, *SlotRequest) (*SlotResponse, error)
-	ReleaseSlot(context.Context, *SlotReleaseRequest) (*Empty, error)
-	CheckRateLimit(context.Context, *RateLimitRequest) (*Empty, error)
-	RecordUsage(context.Context, *UsageLogRequest) (*Empty, error)
-	DeductBalance(context.Context, *DeductRequest) (*Empty, error)
-	mustEmbedUnimplementedCoreCallbackServiceServer()
-}
-
-// UnimplementedCoreCallbackServiceServer must be embedded to have
-// forward compatible implementations.
-//
-// NOTE: this should be embedded by value instead of pointer to avoid a nil
-// pointer dereference when methods are called.
-type UnimplementedCoreCallbackServiceServer struct{}
-
-func (UnimplementedCoreCallbackServiceServer) SelectAccount(context.Context, *ScheduleRequest) (*AccountResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method SelectAccount not implemented")
-}
-func (UnimplementedCoreCallbackServiceServer) SelectWithLoadAwareness(context.Context, *ScheduleRequest) (*AccountSelectionResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method SelectWithLoadAwareness not implemented")
-}
-func (UnimplementedCoreCallbackServiceServer) ReportResult(context.Context, *ReportResultRequest) (*Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "method ReportResult not implemented")
-}
-func (UnimplementedCoreCallbackServiceServer) AcquireSlot(context.Context, *SlotRequest) (*SlotResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method AcquireSlot not implemented")
-}
-func (UnimplementedCoreCallbackServiceServer) ReleaseSlot(context.Context, *SlotReleaseRequest) (*Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "method ReleaseSlot not implemented")
-}
-func (UnimplementedCoreCallbackServiceServer) CheckRateLimit(context.Context, *RateLimitRequest) (*Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "method CheckRateLimit not implemented")
-}
-func (UnimplementedCoreCallbackServiceServer) RecordUsage(context.Context, *UsageLogRequest) (*Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "method RecordUsage not implemented")
-}
-func (UnimplementedCoreCallbackServiceServer) DeductBalance(context.Context, *DeductRequest) (*Empty, error) {
-	return nil, status.Error(codes.Unimplemented, "method DeductBalance not implemented")
-}
-func (UnimplementedCoreCallbackServiceServer) mustEmbedUnimplementedCoreCallbackServiceServer() {}
-func (UnimplementedCoreCallbackServiceServer) testEmbeddedByValue()                             {}
-
-// UnsafeCoreCallbackServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to CoreCallbackServiceServer will
-// result in compilation errors.
-type UnsafeCoreCallbackServiceServer interface {
-	mustEmbedUnimplementedCoreCallbackServiceServer()
-}
-
-func RegisterCoreCallbackServiceServer(s grpc.ServiceRegistrar, srv CoreCallbackServiceServer) {
-	// If the following call panics, it indicates UnimplementedCoreCallbackServiceServer was
-	// embedded by pointer and is nil.  This will cause panics if an
-	// unimplemented method is ever invoked, so we test this at initialization
-	// time to prevent it from happening at runtime later due to I/O.
-	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
-		t.testEmbeddedByValue()
-	}
-	s.RegisterService(&CoreCallbackService_ServiceDesc, srv)
-}
-
-func _CoreCallbackService_SelectAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ScheduleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CoreCallbackServiceServer).SelectAccount(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CoreCallbackService_SelectAccount_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoreCallbackServiceServer).SelectAccount(ctx, req.(*ScheduleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CoreCallbackService_SelectWithLoadAwareness_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ScheduleRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CoreCallbackServiceServer).SelectWithLoadAwareness(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CoreCallbackService_SelectWithLoadAwareness_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoreCallbackServiceServer).SelectWithLoadAwareness(ctx, req.(*ScheduleRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CoreCallbackService_ReportResult_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ReportResultRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CoreCallbackServiceServer).ReportResult(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CoreCallbackService_ReportResult_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoreCallbackServiceServer).ReportResult(ctx, req.(*ReportResultRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CoreCallbackService_AcquireSlot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SlotRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CoreCallbackServiceServer).AcquireSlot(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CoreCallbackService_AcquireSlot_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoreCallbackServiceServer).AcquireSlot(ctx, req.(*SlotRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CoreCallbackService_ReleaseSlot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SlotReleaseRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CoreCallbackServiceServer).ReleaseSlot(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CoreCallbackService_ReleaseSlot_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoreCallbackServiceServer).ReleaseSlot(ctx, req.(*SlotReleaseRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CoreCallbackService_CheckRateLimit_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RateLimitRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CoreCallbackServiceServer).CheckRateLimit(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CoreCallbackService_CheckRateLimit_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoreCallbackServiceServer).CheckRateLimit(ctx, req.(*RateLimitRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CoreCallbackService_RecordUsage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UsageLogRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CoreCallbackServiceServer).RecordUsage(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CoreCallbackService_RecordUsage_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoreCallbackServiceServer).RecordUsage(ctx, req.(*UsageLogRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CoreCallbackService_DeductBalance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeductRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CoreCallbackServiceServer).DeductBalance(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CoreCallbackService_DeductBalance_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CoreCallbackServiceServer).DeductBalance(ctx, req.(*DeductRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-// CoreCallbackService_ServiceDesc is the grpc.ServiceDesc for CoreCallbackService service.
-// It's only intended for direct use with grpc.RegisterService,
-// and not to be introspected or modified (even as a copy)
-var CoreCallbackService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "airgate.plugin.v1.CoreCallbackService",
-	HandlerType: (*CoreCallbackServiceServer)(nil),
-	Methods: []grpc.MethodDesc{
-		{
-			MethodName: "SelectAccount",
-			Handler:    _CoreCallbackService_SelectAccount_Handler,
-		},
-		{
-			MethodName: "SelectWithLoadAwareness",
-			Handler:    _CoreCallbackService_SelectWithLoadAwareness_Handler,
-		},
-		{
-			MethodName: "ReportResult",
-			Handler:    _CoreCallbackService_ReportResult_Handler,
-		},
-		{
-			MethodName: "AcquireSlot",
-			Handler:    _CoreCallbackService_AcquireSlot_Handler,
-		},
-		{
-			MethodName: "ReleaseSlot",
-			Handler:    _CoreCallbackService_ReleaseSlot_Handler,
-		},
-		{
-			MethodName: "CheckRateLimit",
-			Handler:    _CoreCallbackService_CheckRateLimit_Handler,
-		},
-		{
-			MethodName: "RecordUsage",
-			Handler:    _CoreCallbackService_RecordUsage_Handler,
-		},
-		{
-			MethodName: "DeductBalance",
-			Handler:    _CoreCallbackService_DeductBalance_Handler,
-		},
-	},
-	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/plugin.proto",
+	Metadata: "plugin.proto",
 }

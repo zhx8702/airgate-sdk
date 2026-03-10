@@ -1,21 +1,12 @@
 package sdk
 
-import (
-	"context"
-	"net/http"
-)
+import "net/http"
 
 // WebSocket 消息类型
 const (
 	WSMessageText   = 1
 	WSMessageBinary = 2
 )
-
-// WebSocketHandler 可选接口，Simple 网关插件额外实现以支持 WebSocket
-// 核心通过 type assertion 自动检测插件是否具备此能力
-type WebSocketHandler interface {
-	HandleWebSocket(ctx context.Context, conn WebSocketConn) error
-}
 
 // WebSocketConn 抽象的 WebSocket 连接（gRPC 双向流实现）
 type WebSocketConn interface {
