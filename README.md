@@ -53,7 +53,9 @@ Core 通过 [hashicorp/go-plugin](https://github.com/hashicorp/go-plugin) 以独
 │  账号调度（负载均衡、选号）     │     │  声明支持的模型（Models）      │
 │  路由注册（HTTP 网关、鉴权）   │     │  声明 API 端点（Routes）       │
 │  计费、限流、并发控制          │     │  转发请求到上游（Forward）      │
-│  凭证验证调度（添加账号时）    │     │  验证账号凭证（ValidateAccount）│
+│  凭证验证调度（添加账号时）    │     │  反馈账号状态（ForwardResult）  │
+│  账号状态处置（限流/封号/过期）│     │  验证账号凭证（ValidateAccount）│
+│  额度巡检调度（定时任务）      │     │  查询账号额度（QueryQuota）     │
 │  WebSocket 升级转发           │     │  WebSocket 通信（可选）        │
 └───────────────────────────────┘     └───────────────────────────────┘
          通用平台能力                        上游 API 适配器
@@ -66,7 +68,11 @@ Core 通过 [hashicorp/go-plugin](https://github.com/hashicorp/go-plugin) 以独
 ```text
 用户请求 → Core 鉴权 → Core 选账号 → 插件 Forward() → 上游 AI API
                                           ↓
-                        Core 记录用量 ← ForwardResult（token 数）
+                                    ForwardResult
+                                   ┌──────┴──────┐
+                              token 用量     账号状态反馈
+                              Core 计费      Core 更新账号状态
+                                            （限流/封号/过期等）
 ```
 
 ### 账号数据结构
@@ -140,13 +146,33 @@ SDK 定义两大类插件：
 | `Platform()` | 返回业务平台标识（如 `"openai"`） |
 | `Models()` | 声明支持的模型列表（含价格，Core 用于计费） |
 | `Routes()` | 声明 API 端点（如 `POST /v1/chat/completions`），Core 自动注册路由 |
-| `Forward(ctx, req)` | 拿到 Core 调度好的账号，转发请求到上游，返回 token 用量 |
+| `Forward(ctx, req)` | 拿到 Core 调度好的账号，转发请求到上游，返回 token 用量和账号状态反馈 |
 | `ValidateAccount(ctx, credentials)` | 验证凭证有效性，Core 在添加/导入账号时调用 |
-| `HandleWebSocket(ctx, conn)` | 处理 WebSocket 双向通信（如 Realtime API） |
+| `QueryQuota(ctx, credentials)` | 查询账号额度，Core 定时巡检并存入运行时字段，用于调度决策和前端展示 |
+| `HandleWebSocket(ctx, conn)` | 处理 WebSocket 双向通信（如 Responses API），连接结束后返回 `ForwardResult` |
+
+`Forward` 和 `HandleWebSocket` 都返回 `ForwardResult`，结构统一：
+
+```go
+type ForwardResult struct {
+    StatusCode    int           // HTTP 状态码
+    InputTokens   int           // 输入 token 数
+    OutputTokens  int           // 输出 token 数
+    CacheTokens   int           // 缓存 token 数
+    Model         string        // 实际使用的模型
+    Duration      time.Duration // 请求耗时
+
+    // 账号状态反馈（插件识别，Core 处置）
+    AccountStatus string        // "" 正常 / "rate_limited" / "disabled" / "expired"
+    RetryAfter    time.Duration // 限流时建议的等待时间
+}
+```
+
+> 插件负责从上游响应中识别账号异常（429 限流、401 封号等），通过 `AccountStatus` 告诉 Core。Core 自动更新 accounts 表状态并调整调度策略。
 
 Core 自动处理的能力：
 
-- **账号调度** — 根据负载和可用性选择上游账号
+- **账号调度** — 根据负载、可用性和账号状态选择上游账号
 - **计费** — 基于 `ForwardResult` 中的 token 数自动计费
 - **限流** — 按用户/分组维度限流
 - **并发控制** — 按账号维度控制并发
@@ -247,9 +273,14 @@ func (g *MyGateway) ValidateAccount(ctx context.Context, credentials map[string]
     return nil
 }
 
-func (g *MyGateway) HandleWebSocket(ctx context.Context, conn sdk.WebSocketConn) error {
+func (g *MyGateway) QueryQuota(ctx context.Context, credentials map[string]string) (*sdk.QuotaInfo, error) {
+    // 查询账号额度（不支持可返回 ErrNotSupported）
+    return nil, sdk.ErrNotSupported
+}
+
+func (g *MyGateway) HandleWebSocket(ctx context.Context, conn sdk.WebSocketConn) (*sdk.ForwardResult, error) {
     // 处理 WebSocket 双向通信（不需要可返回 ErrNotSupported）
-    return sdk.ErrNotSupported
+    return nil, sdk.ErrNotSupported
 }
 
 // ---- 启动 ----
@@ -364,8 +395,7 @@ airgate-sdk/
 │   ├── common.go      # pluginBase 公共基类
 │   └── *_client.go    # 各插件类型的 gRPC 客户端/服务端
 ├── shared/            # 握手配置
-├── proto/             # protobuf 定义
-└── docs/              # 详细文档
+└── proto/             # protobuf 定义
 ```
 
 ### 推荐的插件项目结构
@@ -462,15 +492,24 @@ Core 启动插件后的消费流程：
 添加/导入账号时：
   → ValidateAccount(ctx, credentials)  调用插件验证凭证有效性
 
+定时巡检（Core 后台任务）：
+  → QueryQuota(ctx, credentials)  查询账号额度，结果存入 accounts 表
+  → 额度不足的账号自动降低优先级或暂停调度
+
 HTTP 请求到达时：
   → Core 鉴权、限流
-  → Core 调度账号
+  → Core 调度账号（跳过 rate_limited / disabled 状态的账号）
   → Forward(ctx, req)  调用插件转发
-  → Core 记录用量（基于 ForwardResult）
+  → Core 记录用量（基于 ForwardResult.token 数）
+  → Core 处理账号状态反馈（基于 ForwardResult.AccountStatus）
+    → rate_limited → 暂停调度，RetryAfter 后恢复
+    → disabled     → 标记封号，停止调度
+    → expired      → 标记过期，停止调度
 
 WebSocket 升级请求时：
   → Core 鉴权、调度账号
   → HandleWebSocket(ctx, conn)  交给插件处理双向通信
+  → 连接结束后，同样通过 ForwardResult 反馈用量和账号状态
 ```
 
 Core 必须遵守的约定：
@@ -480,14 +519,6 @@ Core 必须遵守的约定：
 - 以插件运行时返回的元信息为准，**不依赖 `plugin.yaml` 做运行时决策**
 - 添加账号时调用 `ValidateAccount` 验证凭证，验证失败拒绝保存
 - 账号管理 UI 统一由插件 `FrontendWidgets` 渲染，Core 不做默认表单生成
-
-## 文档
-
-| 文档 | 内容 |
-| --- | --- |
-| [docs/interfaces.md](docs/interfaces.md) | 全部接口定义和类型速览 |
-| [docs/plugin-spec.md](docs/plugin-spec.md) | 插件开发规范和发布流程 |
-| [docs/grpc-protocol.md](docs/grpc-protocol.md) | gRPC 协议定义 |
 
 ## License
 
