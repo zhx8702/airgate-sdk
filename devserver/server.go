@@ -73,7 +73,9 @@ func Run(cfg Config) error {
 	mux.HandleFunc("/api/plugin/info", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		info := cfg.Plugin.Info()
-		json.NewEncoder(w).Encode(info)
+		if err := json.NewEncoder(w).Encode(info); err != nil {
+			log.Printf("写入插件信息响应失败: %v", err)
+		}
 	})
 
 	// 账号管理 API
@@ -109,7 +111,9 @@ func Run(cfg Config) error {
 				} else if strings.HasSuffix(name, ".css") {
 					w.Header().Set("Content-Type", "text/css")
 				}
-				w.Write(data)
+				if _, err := w.Write(data); err != nil {
+					log.Printf("写入插件静态资源失败: %v", err)
+				}
 			})
 		}
 	}

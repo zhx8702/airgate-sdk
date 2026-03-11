@@ -417,9 +417,9 @@ func TestConvertConnectInfo_FullData(t *testing.T) {
 
 func TestConvertConnectInfo_NoCredentials(t *testing.T) {
 	pbInfo := &pb.WebSocketConnectInfo{
-		Path:         "/ws",
-		AccountId:    10,
-		AccountName:  "no-creds",
+		Path:        "/ws",
+		AccountId:   10,
+		AccountName: "no-creds",
 	}
 
 	info := convertConnectInfo(pbInfo)

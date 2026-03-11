@@ -2,6 +2,7 @@ package devserver
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -141,7 +142,9 @@ func (h *AccountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		if idStr == "" {
-			json.NewEncoder(w).Encode(h.store.List())
+			if err := json.NewEncoder(w).Encode(h.store.List()); err != nil {
+				log.Printf("写入账号列表响应失败: %v", err)
+			}
 		} else {
 			id, _ := strconv.ParseInt(idStr, 10, 64)
 			a := h.store.Get(id)
@@ -149,7 +152,9 @@ func (h *AccountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 				return
 			}
-			json.NewEncoder(w).Encode(a)
+			if err := json.NewEncoder(w).Encode(a); err != nil {
+				log.Printf("写入账号详情响应失败: %v", err)
+			}
 		}
 
 	case http.MethodPost:
@@ -160,7 +165,9 @@ func (h *AccountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		created := h.store.Create(a)
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(created)
+		if err := json.NewEncoder(w).Encode(created); err != nil {
+			log.Printf("写入账号创建响应失败: %v", err)
+		}
 
 	case http.MethodPut:
 		id, _ := strconv.ParseInt(idStr, 10, 64)
@@ -174,7 +181,9 @@ func (h *AccountHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 			return
 		}
-		json.NewEncoder(w).Encode(updated)
+		if err := json.NewEncoder(w).Encode(updated); err != nil {
+			log.Printf("写入账号更新响应失败: %v", err)
+		}
 
 	case http.MethodDelete:
 		id, _ := strconv.ParseInt(idStr, 10, 64)

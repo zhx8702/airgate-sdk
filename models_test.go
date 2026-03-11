@@ -204,9 +204,9 @@ func TestQuotaInfoExtraMapPopulated(t *testing.T) {
 		Currency:  "CNY",
 		ExpiresAt: "2026-12-31T23:59:59Z",
 		Extra: map[string]string{
-			"plan":    "enterprise",
-			"region":  "us-east-1",
-			"tier":    "premium",
+			"plan":   "enterprise",
+			"region": "us-east-1",
+			"tier":   "premium",
 		},
 	}
 

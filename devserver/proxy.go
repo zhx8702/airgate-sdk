@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"strings"
 
-	sdk "github.com/DouDOU-start/airgate-sdk"
 	"github.com/gorilla/websocket"
+
+	sdk "github.com/DouDOU-start/airgate-sdk"
 )
 
 // ProxyHandler 将请求代理给插件
@@ -94,7 +95,11 @@ func (p *ProxyHandler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		log.Printf("WebSocket 升级失败: %v", err)
 		return
 	}
-	defer wsConn.Close()
+	defer func() {
+		if err := wsConn.Close(); err != nil {
+			log.Printf("关闭 WebSocket 连接失败: %v", err)
+		}
+	}()
 
 	conn := &devWebSocketConn{
 		conn: wsConn,

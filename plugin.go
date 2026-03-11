@@ -46,13 +46,13 @@ type PluginInfo struct {
 
 // ConfigField 配置项声明
 type ConfigField struct {
-	Key         string `json:"key"`                    // 配置键名
-	Label       string `json:"label"`                  // 显示名称
-	Type        string `json:"type"`                   // "string", "int", "bool", "float", "duration", "password"
-	Required    bool   `json:"required"`               // 是否必填
-	Default     string `json:"default,omitempty"`       // 默认值
-	Description string `json:"description,omitempty"`   // 配置说明
-	Placeholder string `json:"placeholder,omitempty"`   // 占位提示
+	Key         string `json:"key"`                   // 配置键名
+	Label       string `json:"label"`                 // 显示名称
+	Type        string `json:"type"`                  // "string", "int", "bool", "float", "duration", "password"
+	Required    bool   `json:"required"`              // 是否必填
+	Default     string `json:"default,omitempty"`     // 默认值
+	Description string `json:"description,omitempty"` // 配置说明
+	Placeholder string `json:"placeholder,omitempty"` // 占位提示
 }
 
 // PluginContext 核心注入给插件的上下文

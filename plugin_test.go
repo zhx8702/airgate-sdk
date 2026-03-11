@@ -29,13 +29,13 @@ func TestPluginTypeConstants(t *testing.T) {
 
 func TestPluginInfoJSON(t *testing.T) {
 	info := sdk.PluginInfo{
-		ID:          "test-plugin",
-		Name:        "Test Plugin",
-		Version:     "1.0.0",
-		SDKVersion:  sdk.SDKVersion,
-		Description: "A test plugin",
-		Author:      "tester",
-		Type:        sdk.PluginTypeGateway,
+		ID:           "test-plugin",
+		Name:         "Test Plugin",
+		Version:      "1.0.0",
+		SDKVersion:   sdk.SDKVersion,
+		Description:  "A test plugin",
+		Author:       "tester",
+		Type:         sdk.PluginTypeGateway,
 		Dependencies: []string{"dep-a", "dep-b"},
 		ConfigSchema: []sdk.ConfigField{
 			{

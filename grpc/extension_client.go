@@ -50,7 +50,7 @@ func (c *ExtensionGRPCClient) BackgroundTasks() []sdk.BackgroundTask {
 
 // InvalidateCache 清除缓存的插件信息，下次调用时重新获取
 func (c *ExtensionGRPCClient) InvalidateCache() {
-	c.pluginBase.cachedInfo = nil
+	c.cachedInfo = nil
 }
 
 // HandleHTTPRequest 代理 HTTP 请求到插件（核心内部调用）

@@ -29,7 +29,7 @@ func (c *GatewayGRPCClient) InvalidateCache() {
 	c.cachedPlatform = ""
 	c.cachedModels = nil
 	c.cachedRoutes = nil
-	c.pluginBase.cachedInfo = nil
+	c.cachedInfo = nil
 }
 
 func (c *GatewayGRPCClient) Platform() string {

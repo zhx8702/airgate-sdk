@@ -2,20 +2,21 @@
 
 GO := GOTOOLCHAIN=local go
 
-.PHONY: help lint fmt test proto clean
+.PHONY: help ci lint fmt test vet build proto clean
 
 help: ## 显示帮助信息
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 # ===================== 质量检查 =====================
 
-lint: ## 代码检查
-	@if command -v golangci-lint > /dev/null 2>&1; then \
-		golangci-lint run ./...; \
-	else \
-		echo "未安装 golangci-lint，回退到 go vet"; \
-		$(GO) vet ./...; \
+ci: lint test vet build ## 本地运行与 CI 完全一致的检查（提交前执行）
+
+lint: ## 代码检查（需要安装 golangci-lint）
+	@if ! command -v golangci-lint > /dev/null 2>&1; then \
+		echo "错误: 未安装 golangci-lint，请执行: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"; \
+		exit 1; \
 	fi
+	golangci-lint run ./...
 	@echo "代码检查通过"
 
 fmt: ## 格式化代码
@@ -26,9 +27,16 @@ fmt: ## 格式化代码
 	fi
 	@echo "代码格式化完成"
 
-test: ## 运行测试
-	@$(GO) test ./...
+test: ## 运行测试（race 检测 + 覆盖率）
+	$(GO) test -race -coverprofile=coverage.out ./...
+	$(GO) tool cover -func=coverage.out
 	@echo "测试完成"
+
+vet: ## 静态分析
+	$(GO) vet ./...
+
+build: ## 编译检查
+	$(GO) build ./...
 
 # ===================== 代码生成 =====================
 
