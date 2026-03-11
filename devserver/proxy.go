@@ -15,8 +15,9 @@ import (
 
 // ProxyHandler 将请求代理给插件
 type ProxyHandler struct {
-	plugin sdk.GatewayPlugin
-	store  *AccountStore
+	plugin    sdk.GatewayPlugin
+	store     *AccountStore
+	scheduler *Scheduler
 }
 
 func (p *ProxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -55,29 +56,66 @@ func (p *ProxyHandler) handleHTTP(w http.ResponseWriter, r *http.Request) {
 		"path", r.URL.Path,
 		"body", string(body))
 
-	fwdReq := &sdk.ForwardRequest{
-		Account: &sdk.Account{
-			ID:          account.ID,
-			Credentials: account.Credentials,
-			ProxyURL:    account.ProxyURL,
-		},
-		Body:    body,
-		Headers: headers,
-		Stream:  stream,
-		Writer:  w,
+	// 最大重试次数 = 账号总数（含首次）
+	maxAttempts := len(p.store.List())
+	if maxAttempts <= 0 {
+		maxAttempts = 1
 	}
 
-	result, err := p.plugin.Forward(r.Context(), fwdReq)
-	if err != nil {
-		log.Printf("Forward 失败: %v", err)
-		if result == nil || result.StatusCode == 0 {
-			http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadGateway)
+	tried := make(map[int64]bool)
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if attempt > 0 {
+			// failover：重新选择账号
+			account = p.selectAccount()
+			if account == nil || tried[account.ID] {
+				break
+			}
+			log.Printf("[调度] Failover 重试 #%d → 账号 %d (%s)", attempt, account.ID, account.Name)
 		}
+		tried[account.ID] = true
+
+		fwdReq := &sdk.ForwardRequest{
+			Account: &sdk.Account{
+				ID:          account.ID,
+				Credentials: account.Credentials,
+				ProxyURL:    account.ProxyURL,
+			},
+			Body:    body,
+			Headers: headers.Clone(),
+			Stream:  stream,
+			Writer:  w,
+		}
+
+		result, fwdErr := p.plugin.Forward(r.Context(), fwdReq)
+
+		// 上报结果给调度器
+		if p.scheduler != nil && result != nil {
+			p.scheduler.ReportResult(account.ID, result)
+		}
+
+		// 判断是否可以 failover 重试
+		if p.scheduler != nil && p.scheduler.IsRetryable(result, fwdErr) {
+			log.Printf("[调度] 账号 %d (%s) 返回 %d (%s)，尝试 failover",
+				account.ID, account.Name, result.StatusCode, result.AccountStatus)
+			continue
+		}
+
+		if fwdErr != nil {
+			log.Printf("Forward 失败: %v", fwdErr)
+			if result == nil || result.StatusCode == 0 {
+				http.Error(w, `{"error":"`+fwdErr.Error()+`"}`, http.StatusBadGateway)
+			}
+			return
+		}
+
+		log.Printf("Forward 完成: status=%d model=%s input=%d output=%d duration=%s account=%d(%s)",
+			result.StatusCode, result.Model, result.InputTokens, result.OutputTokens, result.Duration,
+			account.ID, account.Name)
 		return
 	}
 
-	log.Printf("Forward 完成: status=%d model=%s input=%d output=%d duration=%s",
-		result.StatusCode, result.Model, result.InputTokens, result.OutputTokens, result.Duration)
+	// 所有账号都失败
+	http.Error(w, `{"error":"all accounts exhausted"}`, http.StatusServiceUnavailable)
 }
 
 func (p *ProxyHandler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
@@ -124,6 +162,9 @@ func (p *ProxyHandler) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *ProxyHandler) selectAccount() *DevAccount {
+	if p.scheduler != nil {
+		return p.scheduler.Select()
+	}
 	return p.store.First()
 }
 

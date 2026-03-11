@@ -11,7 +11,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	sdk "github.com/DouDOU-start/airgate-sdk"
 )
@@ -21,10 +23,11 @@ var staticFiles embed.FS
 
 // Config devserver 配置
 type Config struct {
-	Plugin      sdk.GatewayPlugin                             // 必填：网关插件实例
-	Addr        string                                        // 监听地址，默认 ":18080"
-	DataDir     string                                        // 数据目录，默认 "./devdata"
-	ExtraRoutes func(mux *http.ServeMux, store *AccountStore) // 插件自定义路由（如 OAuth）
+	Plugin         sdk.GatewayPlugin                             // 必填：网关插件实例
+	Addr           string                                        // 监听地址，默认 ":18080"
+	DataDir        string                                        // 数据目录，默认 "./devdata"
+	ExtraRoutes    func(mux *http.ServeMux, store *AccountStore) // 插件自定义路由（如 OAuth）
+	SchedulePolicy SchedulePolicy                                // 调度策略，默认 "none"（直连第一个账号）
 }
 
 // Run 启动 devserver（阻塞运行）
@@ -69,11 +72,16 @@ func Run(cfg Config) error {
 	// 路由
 	mux := http.NewServeMux()
 
-	// 插件信息 API
+	// 插件信息 API（合并 Info + Routes）
 	mux.HandleFunc("/api/plugin/info", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		info := cfg.Plugin.Info()
-		if err := json.NewEncoder(w).Encode(info); err != nil {
+		// PluginInfo 结构体不含 routes，用 map 合并输出
+		data, _ := json.Marshal(info)
+		var merged map[string]any
+		_ = json.Unmarshal(data, &merged)
+		merged["routes"] = cfg.Plugin.Routes()
+		if err := json.NewEncoder(w).Encode(merged); err != nil {
 			log.Printf("写入插件信息响应失败: %v", err)
 		}
 	})
@@ -83,13 +91,57 @@ func Run(cfg Config) error {
 	mux.Handle("/api/accounts/", accountHandler)
 	mux.Handle("/api/accounts", accountHandler)
 
+	// 账号连通性测试 API
+	mux.HandleFunc("/api/accounts/test/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, `{"error":"method not allowed"}`, http.StatusMethodNotAllowed)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/accounts/test/")
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil {
+			http.Error(w, `{"error":"invalid id"}`, http.StatusBadRequest)
+			return
+		}
+		account := store.Get(id)
+		if account == nil {
+			http.Error(w, `{"error":"account not found"}`, http.StatusNotFound)
+			return
+		}
+		start := time.Now()
+		validateErr := cfg.Plugin.ValidateAccount(r.Context(), account.Credentials)
+		duration := time.Since(start)
+		result := map[string]any{
+			"id":       id,
+			"duration": duration.Truncate(time.Millisecond).String(),
+		}
+		if validateErr != nil {
+			result["ok"] = false
+			result["error"] = validateErr.Error()
+		} else {
+			result["ok"] = true
+		}
+		if err := json.NewEncoder(w).Encode(result); err != nil {
+			log.Printf("写入测试结果响应失败: %v", err)
+		}
+	})
+
 	// 插件自定义路由
 	if cfg.ExtraRoutes != nil {
 		cfg.ExtraRoutes(mux, store)
 	}
 
+	// 初始化调度器
+	scheduler := NewScheduler(store, cfg.SchedulePolicy)
+
+	// 调度管理 API
+	schedulerHandler := &SchedulerHandler{scheduler: scheduler, store: store}
+	mux.Handle("/api/scheduler/", schedulerHandler)
+	mux.Handle("/api/scheduler", schedulerHandler)
+
 	// 从 plugin.Routes() 提取路径前缀注册代理
-	proxy := &ProxyHandler{plugin: cfg.Plugin, store: store}
+	proxy := &ProxyHandler{plugin: cfg.Plugin, store: store, scheduler: scheduler}
 	prefixes := routePrefixes(cfg.Plugin.Routes())
 	for _, prefix := range prefixes {
 		mux.Handle(prefix, proxy)
@@ -129,6 +181,7 @@ func Run(cfg Config) error {
 	log.Printf("devserver 启动: http://localhost%s", *addr)
 	log.Printf("插件: %s v%s", info.Name, info.Version)
 	log.Printf("管理页面: http://localhost%s", *addr)
+	log.Printf("调度策略: %s", scheduler.Policy())
 	return http.ListenAndServe(*addr, mux)
 }
 

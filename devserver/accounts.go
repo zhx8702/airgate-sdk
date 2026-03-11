@@ -18,6 +18,7 @@ type DevAccount struct {
 	AccountType string            `json:"account_type"`
 	Credentials map[string]string `json:"credentials"`
 	ProxyURL    string            `json:"proxy_url,omitempty"`
+	Weight      int               `json:"weight,omitempty"` // 调度权重，默认 1
 }
 
 // AccountStore JSON 文件存储
