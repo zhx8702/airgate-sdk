@@ -309,6 +309,75 @@ func main() {
 go build -o my-plugin .
 ```
 
+## 本地开发验证
+
+SDK 提供 `devserver` 包，模拟 AirGate Core 的最小行为，用于插件端到端验证。插件无需部署 Core 即可本地测试账号管理、HTTP/SSE 转发和 WebSocket 通信。
+
+### 最小用法
+
+```go
+package main
+
+import (
+    "log"
+    "github.com/DouDOU-start/airgate-sdk/devserver"
+)
+
+func main() {
+    gw := &MyGateway{}
+    if err := devserver.Run(devserver.Config{
+        Plugin: gw,
+    }); err != nil {
+        log.Fatal(err)
+    }
+}
+```
+
+启动后访问 `http://localhost:18080` 即可看到管理页面，支持：
+
+- 账号 CRUD（JSON 文件持久化）
+- 代理转发（根据 `Routes()` 自动注册路径）
+- WebSocket 升级
+- 插件前端资源服务（如果实现了 `WebAssetsProvider`）
+
+### Config 选项
+
+```go
+type Config struct {
+    Plugin      sdk.GatewayPlugin                              // 必填：网关插件实例
+    Addr        string                                         // 监听地址，默认 ":18080"
+    DataDir     string                                         // 数据目录，默认 "./devdata"
+    ExtraRoutes func(mux *http.ServeMux, store *AccountStore)  // 插件自定义路由
+}
+```
+
+命令行参数 `-addr`、`-data`、`-log` 可覆盖 Config 中的默认值。
+
+### 插件自定义路由
+
+插件如有特殊的开发时路由（如 OAuth 授权流程），通过 `ExtraRoutes` 注入：
+
+```go
+devserver.Run(devserver.Config{
+    Plugin: gw,
+    ExtraRoutes: func(mux *http.ServeMux, store *devserver.AccountStore) {
+        // 注册插件特有的 OAuth 路由
+        h := &gateway.OAuthDevHandler{Gateway: gw, Store: store}
+        h.RegisterRoutes(mux)
+    },
+})
+```
+
+### 内置路由
+
+| 路径 | 说明 |
+| --- | --- |
+| `GET /` | 管理 UI（内嵌 HTML） |
+| `GET /api/plugin/info` | 插件元信息（Info() JSON） |
+| `GET/POST/PUT/DELETE /api/accounts` | 账号 CRUD |
+| `/plugin-assets/*` | 插件前端资源（如有） |
+| `/{routes-prefix}/*` | 代理转发（从 Routes() 提取前缀） |
+
 ## 前端集成
 
 插件的前端能力分两种：**独立页面**和**组件嵌入**，两者通过同一套资源机制（`WebAssetsProvider`）提供 JS/CSS 文件。
@@ -407,6 +476,13 @@ airgate-sdk/
 │   ├── go_plugin.go   # Serve() 入口
 │   ├── common.go      # pluginBase 公共基类
 │   └── *_client.go    # 各插件类型的 gRPC 客户端/服务端
+├── devserver/         # 插件开发服务器（本地验证用）
+│   ├── server.go      # Config + Run() 入口
+│   ├── accounts.go    # 账号 CRUD（JSON 文件存储）
+│   ├── proxy.go       # HTTP/SSE/WebSocket 代理
+│   ├── context.go     # devPluginContext 实现
+│   ├── logger.go      # 多级日志（console INFO + file DEBUG）
+│   └── static/        # 内嵌管理 UI
 ├── shared/            # 握手配置
 └── proto/             # protobuf 定义
 ```
@@ -415,20 +491,22 @@ airgate-sdk/
 
 ```text
 my-plugin/
-├── cmd/server/main.go        # 入口
+├── cmd/
+│   ├── server/main.go         # 生产入口（gRPC 模式）
+│   └── devserver/main.go      # 开发入口（devserver.Run，约 20 行）
 ├── internal/
 │   └── gateway/
-│       ├── gateway.go        # 接口实现
-│       ├── metadata.go       # 元信息（推荐单源维护）
-│       └── assets.go         # WebAssetsProvider + go:embed（可选）
-├── web/                       # 前端源码（可选）
+│       ├── gateway.go         # 接口实现
+│       ├── metadata.go        # 元信息（推荐单源维护）
+│       └── assets.go          # WebAssetsProvider + go:embed（可选）
+├── web/                        # 前端源码（可选）
 │   ├── src/
-│   │   ├── pages/            # 独立页面
-│   │   └── widgets/          # 嵌入组件
+│   │   ├── pages/             # 独立页面
+│   │   └── widgets/           # 嵌入组件
 │   ├── package.json
-│   └── dist/                  # 构建产物
+│   └── dist/                   # 构建产物
 ├── go.mod
-└── plugin.yaml                # 由代码生成的分发文件
+└── plugin.yaml                 # 由代码生成的分发文件
 ```
 
 ## 打包与发布

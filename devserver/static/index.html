@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AirGate Dev Server</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; background: #0f1523; color: #e8ecf4; min-height: 100vh; }
+  .container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
+  h1 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .subtitle { color: #8892a8; font-size: 0.875rem; margin-bottom: 2rem; }
+  .card { background: #1c2237; border: 1px solid #2a3050; border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+  .card-title { font-size: 1rem; font-weight: 500; }
+  .badge { font-size: 0.7rem; padding: 0.2rem 0.5rem; border-radius: 0.25rem; background: #2a3050; color: #8892a8; }
+  label { display: block; font-size: 0.75rem; font-weight: 500; color: #8892a8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.375rem; }
+  input, select { display: block; width: 100%; border-radius: 0.5rem; border: 1px solid #2a3050; background: #151b2e; padding: 0.5rem 0.75rem; font-size: 0.875rem; color: #e8ecf4; outline: none; margin-bottom: 0.75rem; }
+  input:focus, select:focus { border-color: #3b82f6; }
+  .btn { padding: 0.5rem 1rem; border-radius: 0.5rem; border: none; cursor: pointer; font-size: 0.8rem; font-weight: 500; transition: opacity 0.2s; }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: #3b82f6; color: white; }
+  .btn-danger { background: #ef4444; color: white; }
+  .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.75rem; }
+  .btn-group { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .type-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+  .type-card { border: 1px solid #2a3050; border-radius: 0.5rem; padding: 0.75rem; cursor: pointer; transition: border-color 0.2s; }
+  .type-card:hover { border-color: #4a5070; }
+  .type-card.active { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+  .type-card-title { font-size: 0.875rem; font-weight: 500; }
+  .type-card-desc { font-size: 0.7rem; color: #5a637a; margin-top: 0.25rem; }
+  .empty { text-align: center; color: #5a637a; padding: 2rem; }
+  .endpoint { font-family: monospace; font-size: 0.8rem; background: #151b2e; padding: 0.5rem; border-radius: 0.375rem; margin-top: 0.5rem; color: #4ade80; }
+  #form-section { display: none; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 id="page-title">AirGate Dev Server</h1>
+  <p class="subtitle" id="plugin-info">加载中...</p>
+
+  <!-- 端点信息（动态渲染） -->
+  <div class="card">
+    <div class="card-title" style="margin-bottom:0.75rem">代理端点</div>
+    <div id="endpoints-list"><div class="empty">加载中...</div></div>
+  </div>
+
+  <!-- 账号列表 -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">账号</span>
+      <button class="btn btn-primary btn-sm" onclick="showForm()">添加账号</button>
+    </div>
+    <div id="account-list"><div class="empty">暂无账号，请点击"添加账号"</div></div>
+  </div>
+
+  <!-- 添加/编辑表单 -->
+  <div class="card" id="form-section">
+    <div class="card-title" id="form-title" style="margin-bottom:1rem">添加账号</div>
+
+    <label>名称</label>
+    <input id="f-name" placeholder="My Account">
+
+    <label>账号类型</label>
+    <div class="type-cards" id="type-cards"></div>
+
+    <div id="cred-fields"></div>
+
+    <label>代理地址</label>
+    <input id="f-proxy" placeholder="http://127.0.0.1:7890（可选）">
+
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="saveAccount()">保存</button>
+      <button class="btn" style="background:#2a3050;color:#8892a8" onclick="hideForm()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let pluginInfo = null;
+let editingId = null;
+
+// 颜色池，为不同账号类型动态分配 badge 颜色
+const badgeColors = [
+  { bg: '#1a3a2a', fg: '#4ade80' },
+  { bg: '#1a2a3a', fg: '#60a5fa' },
+  { bg: '#3a2a1a', fg: '#fb923c' },
+  { bg: '#2a1a3a', fg: '#c084fc' },
+];
+
+async function init() {
+  try {
+    const res = await fetch(API + '/api/plugin/info');
+    pluginInfo = await res.json();
+    document.getElementById('page-title').textContent = pluginInfo.name + ' Dev Server';
+    document.title = pluginInfo.name + ' - Dev Server';
+    document.getElementById('plugin-info').textContent =
+      `${pluginInfo.name} v${pluginInfo.version} — ${pluginInfo.description}`;
+    renderEndpoints();
+    renderTypeCards();
+  } catch(e) {
+    document.getElementById('plugin-info').textContent = '无法加载插件信息';
+  }
+  loadAccounts();
+}
+
+function renderEndpoints() {
+  const container = document.getElementById('endpoints-list');
+  if (!pluginInfo || !pluginInfo.routes) {
+    container.innerHTML = '<div class="empty">无路由信息</div>';
+    return;
+  }
+  container.innerHTML = pluginInfo.routes.map(r =>
+    `<div class="endpoint">${padMethod(r.method)} ${r.path} &nbsp;&nbsp; # ${r.description}</div>`
+  ).join('');
+}
+
+function padMethod(m) {
+  return (m || '').padEnd(4, '\u00a0');
+}
+
+function renderTypeCards() {
+  const container = document.getElementById('type-cards');
+  if (!pluginInfo || !pluginInfo.account_types) return;
+  container.innerHTML = pluginInfo.account_types.map(t =>
+    `<div class="type-card" data-type="${t.key}" onclick="selectType('${t.key}')">
+      <div class="type-card-title">${t.label}</div>
+      <div class="type-card-desc">${t.description}</div>
+    </div>`
+  ).join('');
+}
+
+function selectType(typeKey) {
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.type-card[data-type="${typeKey}"]`)?.classList.add('active');
+  renderCredFields(typeKey);
+}
+
+function renderCredFields(typeKey) {
+  const container = document.getElementById('cred-fields');
+  if (!pluginInfo) return;
+  const at = pluginInfo.account_types.find(t => t.key === typeKey);
+  if (!at) { container.innerHTML = ''; return; }
+  container.innerHTML = at.fields.map(f =>
+    `<div>
+      <label>${f.label}${f.required ? ' *' : ''}</label>
+      <input id="cred-${f.key}" type="${f.type === 'password' ? 'password' : 'text'}"
+             placeholder="${f.placeholder || ''}">
+    </div>`
+  ).join('');
+}
+
+function getSelectedType() {
+  return document.querySelector('.type-card.active')?.dataset.type || '';
+}
+
+function getCredentials() {
+  const creds = {};
+  document.querySelectorAll('#cred-fields input').forEach(input => {
+    const key = input.id.replace('cred-', '');
+    if (input.value) creds[key] = input.value;
+  });
+  return creds;
+}
+
+function getBadgeStyle(typeKey) {
+  if (!pluginInfo || !pluginInfo.account_types) return badgeColors[0];
+  const idx = pluginInfo.account_types.findIndex(t => t.key === typeKey);
+  return badgeColors[Math.max(0, idx) % badgeColors.length];
+}
+
+function getTypeLabel(typeKey) {
+  if (!pluginInfo || !pluginInfo.account_types) return typeKey;
+  const at = pluginInfo.account_types.find(t => t.key === typeKey);
+  return at ? at.label : typeKey;
+}
+
+async function loadAccounts() {
+  const res = await fetch(API + '/api/accounts');
+  const accounts = await res.json();
+  const container = document.getElementById('account-list');
+  if (!accounts || accounts.length === 0) {
+    container.innerHTML = '<div class="empty">暂无账号，请点击"添加账号"</div>';
+    return;
+  }
+  container.innerHTML = accounts.map(a => {
+    const style = getBadgeStyle(a.account_type);
+    const typeLabel = getTypeLabel(a.account_type);
+    const credKeys = Object.keys(a.credentials || {});
+    const credHint = credKeys.length > 0 ? maskKey(a.credentials[credKeys[0]]) : '—';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #1a2035">
+      <div>
+        <span style="font-weight:500">${a.name || '未命名'}</span>
+        <span class="badge" style="margin-left:0.5rem;background:${style.bg};color:${style.fg}">${typeLabel}</span>
+        <div style="font-size:0.75rem;color:#5a637a;margin-top:0.25rem">${credHint}</div>
+      </div>
+      <div style="display:flex;gap:0.5rem">
+        <button class="btn btn-sm" style="background:#2a3050;color:#8892a8" onclick="editAccount(${a.id})">编辑</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAccount(${a.id})">删除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function maskKey(key) {
+  if (!key) return '—';
+  if (key.length <= 8) return '****';
+  return key.slice(0, 4) + '...' + key.slice(-4);
+}
+
+function showForm(account) {
+  editingId = account ? account.id : null;
+  document.getElementById('form-section').style.display = 'block';
+  document.getElementById('form-title').textContent = account ? '编辑账号' : '添加账号';
+  document.getElementById('f-name').value = account?.name || '';
+  document.getElementById('f-proxy').value = account?.proxy_url || '';
+
+  if (account?.account_type) {
+    selectType(account.account_type);
+    setTimeout(() => {
+      if (account.credentials) {
+        Object.entries(account.credentials).forEach(([k, v]) => {
+          const input = document.getElementById('cred-' + k);
+          if (input) input.value = v;
+        });
+      }
+    }, 0);
+  }
+}
+
+function hideForm() {
+  document.getElementById('form-section').style.display = 'none';
+  editingId = null;
+}
+
+async function editAccount(id) {
+  const res = await fetch(API + '/api/accounts/' + id);
+  const account = await res.json();
+  showForm(account);
+}
+
+async function saveAccount() {
+  const data = {
+    name: document.getElementById('f-name').value,
+    account_type: getSelectedType(),
+    credentials: getCredentials(),
+    proxy_url: document.getElementById('f-proxy').value,
+  };
+  if (!data.account_type) { alert('请选择账号类型'); return; }
+
+  const url = editingId ? API + '/api/accounts/' + editingId : API + '/api/accounts';
+  const method = editingId ? 'PUT' : 'POST';
+  await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+  hideForm();
+  loadAccounts();
+}
+
+async function deleteAccount(id) {
+  if (!confirm('确定删除此账号？')) return;
+  await fetch(API + '/api/accounts/' + id, { method: 'DELETE' });
+  loadAccounts();
+}
+
+init();
+</script>
+</body>
+</html>
