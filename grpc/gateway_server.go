@@ -79,11 +79,28 @@ func toProtoResult(result *sdk.ForwardResult) *pb.ForwardResult {
 	}
 }
 
-func (s *GatewayGRPCServer) Forward(ctx context.Context, req *pb.ForwardRequest) (*pb.ForwardResult, error) {
-	headers := make(http.Header)
-	for k, v := range req.Headers {
-		headers.Set(k, v)
+// protoHeadersToHTTP 将 proto 多值 Headers 转为 http.Header
+func protoHeadersToHTTP(ph map[string]*pb.HeaderValues) http.Header {
+	h := make(http.Header, len(ph))
+	for k, v := range ph {
+		if v != nil {
+			h[k] = v.Values
+		}
 	}
+	return h
+}
+
+// httpHeadersToProto 将 http.Header 转为 proto 多值 Headers
+func httpHeadersToProto(h http.Header) map[string]*pb.HeaderValues {
+	ph := make(map[string]*pb.HeaderValues, len(h))
+	for k, v := range h {
+		ph[k] = &pb.HeaderValues{Values: v}
+	}
+	return ph
+}
+
+func (s *GatewayGRPCServer) Forward(ctx context.Context, req *pb.ForwardRequest) (*pb.ForwardResult, error) {
+	headers := protoHeadersToHTTP(req.Headers)
 
 	fwdReq := &sdk.ForwardRequest{
 		Account: buildAccount(req),
@@ -101,10 +118,7 @@ func (s *GatewayGRPCServer) Forward(ctx context.Context, req *pb.ForwardRequest)
 }
 
 func (s *GatewayGRPCServer) ForwardStream(req *pb.ForwardRequest, stream pb.GatewayService_ForwardStreamServer) error {
-	headers := make(http.Header)
-	for k, v := range req.Headers {
-		headers.Set(k, v)
-	}
+	headers := protoHeadersToHTTP(req.Headers)
 
 	sw := &streamWriter{stream: stream}
 	fwdReq := &sdk.ForwardRequest{

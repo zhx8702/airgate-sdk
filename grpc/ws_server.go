@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 
 	sdk "github.com/DouDOU-start/airgate-sdk"
 	pb "github.com/DouDOU-start/airgate-sdk/proto"
@@ -100,10 +99,7 @@ func convertConnectInfo(info *pb.WebSocketConnectInfo) *sdk.WebSocketConnectInfo
 		return &sdk.WebSocketConnectInfo{}
 	}
 
-	headers := make(http.Header)
-	for k, v := range info.Headers {
-		headers.Set(k, v)
-	}
+	headers := protoHeadersToHTTP(info.Headers)
 
 	var creds map[string]string
 	if len(info.CredentialsJson) > 0 {

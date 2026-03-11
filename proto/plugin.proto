@@ -47,6 +47,11 @@ message StringResponse {
     string value = 1;
 }
 
+// HeaderValues 支持同一 Header 有多个值（如 Set-Cookie）
+message HeaderValues {
+    repeated string values = 1;
+}
+
 // ==================== 插件信息 ====================
 
 message PluginInfoResponse {
@@ -127,7 +132,7 @@ message ForwardRequest {
     bytes  credentials_json = 5;
     string proxy_url = 6;
     bytes  body = 7;
-    map<string, string> headers = 8;
+    map<string, HeaderValues> headers = 8;
     string model = 9;
     bool   stream = 10;
 }
@@ -141,9 +146,6 @@ message ForwardResult {
     int64  duration_ms = 6;
     string account_status = 7;   // "" / "rate_limited" / "disabled" / "expired"
     int64  retry_after_ms = 8;   // 限流时建议等待时间（毫秒）
-    // 流式响应的元信息
-    bytes  response_body = 9;
-    map<string, string> response_headers = 10;
 }
 
 message ForwardChunk {
@@ -171,14 +173,14 @@ message HttpRequest {
     string method = 1;
     string path = 2;
     string query = 3;
-    map<string, string> headers = 4;
+    map<string, HeaderValues> headers = 4;
     bytes  body = 5;
     string remote_addr = 6;
 }
 
 message HttpResponse {
     int32  status_code = 1;
-    map<string, string> headers = 2;
+    map<string, HeaderValues> headers = 2;
     bytes  body = 3;
 }
 
@@ -186,7 +188,7 @@ message HttpResponseChunk {
     bytes data = 1;
     bool  done = 2;
     int32 status_code = 3;
-    map<string, string> headers = 4;
+    map<string, HeaderValues> headers = 4;
 }
 
 // ==================== 扩展消息 ====================
@@ -228,7 +230,7 @@ message WebSocketFrame {
 message WebSocketConnectInfo {
     string path  = 1;
     string query = 2;
-    map<string, string> headers = 3;
+    map<string, HeaderValues> headers = 3;
     string remote_addr    = 4;
     string connection_id  = 5;
     // 核心已调度的账户信息

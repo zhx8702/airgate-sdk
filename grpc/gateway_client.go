@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"time"
 
 	sdk "github.com/DouDOU-start/airgate-sdk"
@@ -76,10 +75,6 @@ func (c *GatewayGRPCClient) Routes() []sdk.RouteDefinition {
 // buildProtoRequest 将 SDK ForwardRequest 转为 proto ForwardRequest
 func buildProtoRequest(req *sdk.ForwardRequest) *pb.ForwardRequest {
 	credsJSON, _ := json.Marshal(req.Account.Credentials)
-	headers := make(map[string]string)
-	for k := range req.Headers {
-		headers[k] = req.Headers.Get(k)
-	}
 	return &pb.ForwardRequest{
 		AccountId:       req.Account.ID,
 		AccountName:     req.Account.Name,
@@ -88,7 +83,7 @@ func buildProtoRequest(req *sdk.ForwardRequest) *pb.ForwardRequest {
 		CredentialsJson: credsJSON,
 		ProxyUrl:        req.Account.ProxyURL,
 		Body:            req.Body,
-		Headers:         headers,
+		Headers:         httpHeadersToProto(req.Headers),
 		Model:           req.Model,
 		Stream:          req.Stream,
 	}
@@ -200,7 +195,7 @@ func (c *GatewayGRPCClient) HandleWebSocket(ctx context.Context, conn sdk.WebSoc
 		ConnectInfo: &pb.WebSocketConnectInfo{
 			Path:            info.Path,
 			Query:           info.Query,
-			Headers:         flattenHeaders(info.Headers),
+			Headers:         httpHeadersToProto(info.Headers),
 			RemoteAddr:      info.RemoteAddr,
 			ConnectionId:    info.ConnectionID,
 			AccountId:       info.Account.ID,
@@ -279,19 +274,17 @@ func (c *GatewayGRPCClient) HandleWebSocket(ctx context.Context, conn sdk.WebSoc
 
 done:
 	_ = clientConn // 保持引用
+
+	// 等待读取 goroutine 退出，避免泄漏
+	select {
+	case <-errCh:
+	default:
+	}
+
 	if result == nil {
 		return &sdk.ForwardResult{}, nil
 	}
 	return result, nil
-}
-
-// flattenHeaders 将 http.Header 扁平化为 map[string]string
-func flattenHeaders(headers http.Header) map[string]string {
-	flat := make(map[string]string, len(headers))
-	for k := range headers {
-		flat[k] = headers.Get(k)
-	}
-	return flat
 }
 
 // grpcClientWebSocketConn 用于保持 gRPC 流引用
