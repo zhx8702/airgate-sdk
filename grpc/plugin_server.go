@@ -75,6 +75,12 @@ func (s *PluginGRPCServer) GetInfo(_ context.Context, _ *pb.Empty) (*pb.PluginIn
 }
 
 func (s *PluginGRPCServer) Init(_ context.Context, req *pb.InitRequest) (*pb.Empty, error) {
+	// 用 Core 传来的 log_level 重新初始化日志级别
+	if req.LogLevel != "" {
+		info := s.Impl.Info()
+		sdk.InitLogger("plugin."+info.ID, req.LogLevel, sdk.LogFormat())
+	}
+
 	pctx := &grpcPluginContext{
 		config: &mapConfig{data: req.Config},
 	}

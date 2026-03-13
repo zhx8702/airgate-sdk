@@ -60,7 +60,14 @@ func (p *ExtensionGRPCPlugin) GRPCClient(_ context.Context, _ *goplugin.GRPCBrok
 
 // Serve 便捷函数：启动插件 gRPC 服务（插件的 main.go 中调用）
 // 自动识别插件类型，注册对应的 gRPC 服务
+// 自动初始化带 module=plugin.<ID> 前缀的全局日志
 func Serve(impl interface{}) {
+	// 自动初始化日志：从插件 Info() 获取 ID，设置 module 前缀
+	if p, ok := impl.(sdk.Plugin); ok {
+		info := p.Info()
+		sdk.InitLogger("plugin."+info.ID, "info", "text")
+	}
+
 	pluginMap := make(goplugin.PluginSet)
 
 	switch p := impl.(type) {
