@@ -27,24 +27,28 @@ async function loadPluginModule() {
  * 尝试加载并渲染插件 Widget
  * @param {string} typeKey 当前选中的账号类型
  * @param {object} formState 表单状态回调
- * @returns {boolean} 是否成功加载了 Widget（用于决定是否隐藏默认凭证字段）
+ * @returns {Promise<boolean>} 是否成功加载了 Widget（用于决定是否隐藏默认凭证字段）
  */
 export async function tryLoadPluginWidget(typeKey, formState) {
   const slot = document.getElementById('plugin-widget-slot');
   const credFields = document.getElementById('cred-fields');
+  const typeCards = document.getElementById('type-cards');
+  const dialog = document.getElementById('form-dialog');
 
   const mod = await loadPluginModule();
   if (!mod || !mod.default?.accountForm) {
-    // 无插件 Widget，显示默认凭证字段
     slot.style.display = 'none';
     slot.innerHTML = '';
     credFields.style.display = '';
+    typeCards.style.display = '';
+    dialog?.setAttribute('data-form-mode', 'fallback');
     return false;
   }
 
-  // 有插件 Widget，隐藏默认凭证字段
   slot.style.display = 'block';
   credFields.style.display = 'none';
+  typeCards.style.display = 'none';
+  dialog?.setAttribute('data-form-mode', 'plugin');
 
   const FormComponent = mod.default.accountForm;
 
@@ -83,7 +87,11 @@ function buildOAuthProp() {
         const err = await res.text();
         throw new Error(err || '生成授权链接失败');
       }
-      return res.json();
+      const data = await res.json();
+      return {
+        authorizeURL: data.authorizeURL || data.authorize_url || '',
+        state: data.state || '',
+      };
     },
     exchange: async (callbackURL) => {
       // 从回调 URL 提取 code 和 state
@@ -119,6 +127,10 @@ export function unmountWidget() {
     widgetRoot = null;
   }
   const slot = document.getElementById('plugin-widget-slot');
+  const typeCards = document.getElementById('type-cards');
+  const dialog = document.getElementById('form-dialog');
   slot.style.display = 'none';
   slot.innerHTML = '';
+  typeCards.style.display = '';
+  dialog?.setAttribute('data-form-mode', 'fallback');
 }

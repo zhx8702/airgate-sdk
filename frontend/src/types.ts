@@ -1,4 +1,4 @@
-/** 随主题变化的 token（颜色、阴影等） */
+/** 随主题变化的语义 token（颜色、阴影等） */
 export interface ThemeTokens {
   // 主色调
   primary: string;
@@ -46,11 +46,8 @@ export interface ThemeTokens {
   shadowGlow: string;
 }
 
-/** 不随主题变化的 token（布局、字体、过渡等） */
-export interface StaticTokens {
-  sidebarWidth: string;
-  sidebarCollapsed: string;
-  topbarHeight: string;
+/** 通用基础 token：组件和布局都可复用 */
+export interface FoundationTokens {
   radiusSm: string;
   radiusMd: string;
   radiusLg: string;
@@ -61,4 +58,50 @@ export interface StaticTokens {
   transitionSlow: string;
 }
 
+/** 应用壳层 token：不建议在通用组件中直接依赖 */
+export interface AppShellTokens {
+  sidebarWidth: string;
+  sidebarCollapsed: string;
+  topbarHeight: string;
+}
+
+/** 不随主题变化的 token（保持向后兼容的扁平结构） */
+export interface StaticTokens extends FoundationTokens, AppShellTokens {}
+
+export interface StaticTokenGroups {
+  foundation: FoundationTokens;
+  appShell: AppShellTokens;
+}
+
 export type ThemeName = 'dark' | 'light';
+
+export interface ThemeScopeOptions {
+  scopeSelector?: string;
+  themeAttribute?: string;
+  prefix?: string;
+}
+
+export interface ThemeCSSOptions extends ThemeScopeOptions {}
+
+export interface ThemeInjectionOptions extends ThemeScopeOptions {
+  styleId?: string;
+  targetDocument?: Document;
+}
+
+export interface ThemeSetOptions {
+  target?: HTMLElement;
+  themeAttribute?: string;
+  storageKey?: string;
+}
+
+export interface ThemeStorageOptions {
+  storageKey?: string;
+}
+
+export interface CssVarOptions {
+  prefix?: string;
+}
+
+export interface TailwindBridgeOptions {
+  prefix?: string;
+}

@@ -1,6 +1,7 @@
 // 公共工具函数
 
 export const API = '';
+export const THEME_STORAGE_KEY = 'ag-theme';
 
 export const typeColors = [
   { bg: 'var(--ag-primary-subtle)', fg: 'var(--ag-primary)' },
@@ -36,4 +37,25 @@ export function maskKey(key) {
 export function iconLetter(name, typeKey) {
   if (name) return name[0].toUpperCase();
   return (typeKey || '?')[0].toUpperCase();
+}
+
+export function applyTheme(theme) {
+  const nextTheme = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', nextTheme);
+  localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+  const toggle = document.getElementById('theme-toggle');
+  if (toggle) {
+    toggle.textContent = nextTheme === 'light' ? 'Light' : 'Dark';
+    toggle.setAttribute('aria-label', nextTheme === 'light' ? '切换到深色主题' : '切换到浅色主题');
+  }
+}
+
+export function initTheme() {
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  applyTheme(stored === 'light' ? 'light' : stored === 'dark' ? 'dark' : 'light');
+}
+
+export function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'light' ? 'dark' : 'light');
 }

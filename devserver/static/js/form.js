@@ -6,15 +6,28 @@ import { loadScheduler } from './scheduler.js';
 import { tryLoadPluginWidget, unmountWidget } from './widget.js';
 
 let editingId = null;
+let selectedType = '';
+let widgetMode = false;
 
 // Widget 与原生表单共享的凭证状态
 let widgetCredentials = {};
 
+function setSelectedType(typeKey) {
+  selectedType = typeKey || '';
+  document.querySelectorAll('.type-option').forEach((card) => {
+    card.classList.toggle('active', card.dataset.type === selectedType);
+  });
+}
+
 export function renderTypeCards() {
   const el = document.getElementById('type-cards');
   if (!pluginInfo?.account_types) return;
-  el.innerHTML = pluginInfo.account_types.map(t =>
+  el.innerHTML = pluginInfo.account_types.map((t, index) =>
     `<div class="type-option" data-type="${t.key}">
+      <div class="type-option-meta">
+        <span class="type-option-index">${String(index + 1).padStart(2, '0')}</span>
+        <span class="type-option-kicker">${t.key}</span>
+      </div>
       <div class="type-option-title">${t.label}</div>
       <div class="type-option-desc">${t.description}</div>
     </div>`
@@ -22,22 +35,17 @@ export function renderTypeCards() {
 }
 
 export async function selectType(typeKey) {
-  document.querySelectorAll('.type-option').forEach(c => c.classList.remove('active'));
-  document.querySelector(`.type-option[data-type="${typeKey}"]`)?.classList.add('active');
+  setSelectedType(typeKey);
   renderCredFields(typeKey);
-
-  // 重置 Widget 凭证
+  widgetMode = false;
   widgetCredentials = {};
 
-  // 尝试加载插件 Widget
   const loaded = await tryLoadPluginWidget(typeKey, {
     credentials: widgetCredentials,
     onChange: (creds) => { widgetCredentials = creds; },
     mode: editingId ? 'edit' : 'create',
     onAccountTypeChange: (type) => {
-      // Widget 请求切换账号类型时，更新类型卡片选中状态
-      document.querySelectorAll('.type-option').forEach(c => c.classList.remove('active'));
-      document.querySelector(`.type-option[data-type="${type}"]`)?.classList.add('active');
+      setSelectedType(type);
     },
     onSuggestedName: (name) => {
       const nameInput = document.getElementById('f-name');
@@ -47,10 +55,7 @@ export async function selectType(typeKey) {
     },
   });
 
-  // 如果 Widget 加载成功，不需要默认凭证字段
-  if (loaded) {
-    document.getElementById('cred-fields').style.display = 'none';
-  }
+  widgetMode = loaded;
 }
 
 function renderCredFields(typeKey) {
@@ -58,7 +63,7 @@ function renderCredFields(typeKey) {
   const at = pluginInfo?.account_types?.find(t => t.key === typeKey);
   if (!at) { el.innerHTML = ''; return; }
   el.innerHTML = at.fields.map(f =>
-    `<div>
+    `<div class="dialog-section dialog-section--fallback-field">
       <label class="field-label">${f.label}${f.required ? ' *' : ''}</label>
       <input id="cred-${f.key}" class="field-input${f.type === 'password' ? '' : ' mono'}"
              type="${f.type === 'password' ? 'password' : 'text'}"
@@ -68,13 +73,12 @@ function renderCredFields(typeKey) {
 }
 
 export function getSelectedType() {
-  return document.querySelector('.type-option.active')?.dataset.type || '';
+  return selectedType;
 }
 
 /** 获取凭证：优先从 Widget 状态取，否则从 DOM 取 */
 export function getCredentials() {
-  // 如果 Widget 提供了凭证（有值），优先使用
-  if (Object.keys(widgetCredentials).length > 0) {
+  if (widgetMode) {
     return widgetCredentials;
   }
   // 否则从默认输入框取
@@ -86,48 +90,59 @@ export function getCredentials() {
   return creds;
 }
 
-export function showForm(account) {
+export async function showForm(account) {
   editingId = account ? account.id : null;
-  widgetCredentials = {};
+  widgetMode = false;
+  widgetCredentials = { ...(account?.credentials || {}) };
+  selectedType = account?.account_type || '';
   document.getElementById('form-overlay').style.display = 'flex';
   document.getElementById('form-title').textContent = account ? '编辑账号' : '添加账号';
   document.getElementById('f-name').value = account?.name || '';
   document.getElementById('f-proxy').value = account?.proxy_url || '';
   document.getElementById('f-weight').value = account?.weight || 1;
-  if (account?.account_type) {
-    selectType(account.account_type);
-    setTimeout(() => {
-      if (account.credentials) {
-        // 设置 Widget 凭证（供 Widget 使用）
-        widgetCredentials = { ...account.credentials };
-        // 同时填充默认输入框（如果 Widget 未加载）
-        Object.entries(account.credentials).forEach(([k, v]) => {
-          const input = document.getElementById('cred-' + k);
-          if (input) input.value = v;
-        });
-        // 如果 Widget 已加载，需要重新渲染以传入新凭证
-        const typeKey = account.account_type;
-        tryLoadPluginWidget(typeKey, {
-          credentials: widgetCredentials,
-          onChange: (creds) => { widgetCredentials = creds; },
-          mode: 'edit',
-          onAccountTypeChange: (type) => {
-            document.querySelectorAll('.type-option').forEach(c => c.classList.remove('active'));
-            document.querySelector(`.type-option[data-type="${type}"]`)?.classList.add('active');
-          },
-          onSuggestedName: (name) => {
-            const nameInput = document.getElementById('f-name');
-            if (nameInput && !nameInput.value) nameInput.value = name;
-          },
-        });
-      }
-    }, 0);
+  setSelectedType(selectedType);
+
+  if (!selectedType) {
+    document.getElementById('cred-fields').innerHTML = '';
+    const loaded = await tryLoadPluginWidget('', {
+      credentials: widgetCredentials,
+      onChange: (creds) => { widgetCredentials = creds; },
+      mode: editingId ? 'edit' : 'create',
+      onAccountTypeChange: (type) => setSelectedType(type),
+      onSuggestedName: (name) => {
+        const nameInput = document.getElementById('f-name');
+        if (nameInput && !nameInput.value) nameInput.value = name;
+      },
+    });
+    widgetMode = loaded;
+    return;
   }
+
+  renderCredFields(selectedType);
+  Object.entries(account?.credentials || {}).forEach(([k, v]) => {
+    const input = document.getElementById('cred-' + k);
+    if (input) input.value = v;
+  });
+
+  const loaded = await tryLoadPluginWidget(selectedType, {
+    credentials: widgetCredentials,
+    onChange: (creds) => { widgetCredentials = creds; },
+    mode: editingId ? 'edit' : 'create',
+    onAccountTypeChange: (type) => setSelectedType(type),
+    onSuggestedName: (name) => {
+      const nameInput = document.getElementById('f-name');
+      if (nameInput && !nameInput.value) nameInput.value = name;
+    },
+  });
+
+  widgetMode = loaded;
 }
 
 export function hideForm() {
   document.getElementById('form-overlay').style.display = 'none';
   editingId = null;
+  selectedType = '';
+  widgetMode = false;
   widgetCredentials = {};
   document.getElementById('f-name').value = '';
   document.getElementById('f-proxy').value = '';

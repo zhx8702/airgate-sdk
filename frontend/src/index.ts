@@ -1,17 +1,43 @@
 // 类型
-export type { ThemeTokens, StaticTokens, ThemeName } from './types.js';
+export type {
+  AppShellTokens,
+  CssVarOptions,
+  FoundationTokens,
+  StaticTokenGroups,
+  StaticTokens,
+  TailwindBridgeOptions,
+  ThemeCSSOptions,
+  ThemeInjectionOptions,
+  ThemeName,
+  ThemeSetOptions,
+  ThemeStorageOptions,
+  ThemeTokens,
+} from './types.js';
 
 // Token 常量
-export { darkTheme, lightTheme, staticTokens, themes } from './tokens.js';
+export {
+  appShellTokens,
+  darkTheme,
+  foundationTokens,
+  lightTheme,
+  staticTokenGroups,
+  staticTokens,
+  themes,
+} from './tokens.js';
 
 // CSS 生成与运行时
 export {
-  tokenToCssVar,
-  staticToCssVar,
+  createAppShellCssVarMap,
+  createFoundationCssVarMap,
+  createStaticCssVarMap,
+  createTailwindThemeBridge,
+  createThemeCssVarMap,
   generateThemeCSS,
+  getStoredTheme,
   injectThemeStyle,
   setTheme,
-  getStoredTheme,
+  staticToCssVar,
+  tokenToCssVar,
 } from './css.js';
 
 // 插件 Helper

@@ -1,100 +1,123 @@
-import type { ThemeTokens, StaticTokens, ThemeName } from './types.js';
+import type {
+  AppShellTokens,
+  FoundationTokens,
+  StaticTokenGroups,
+  StaticTokens,
+  ThemeName,
+  ThemeTokens,
+} from './types.js';
 
-/** 暗色主题 */
+/** 暗色主题 — Obsidian Terminal */
 export const darkTheme: ThemeTokens = {
-  primary: '#3b82f6',
-  primaryHover: '#2563eb',
-  primarySubtle: 'rgba(59, 130, 246, 0.12)',
-  primaryGlow: 'rgba(59, 130, 246, 0.25)',
+  primary: '#00d4aa',
+  primaryHover: '#00e6b8',
+  primarySubtle: 'rgba(0, 212, 170, 0.12)',
+  primaryGlow: 'rgba(0, 212, 170, 0.20)',
 
-  success: '#10b981',
-  successSubtle: 'rgba(16, 185, 129, 0.12)',
+  success: '#22c55e',
+  successSubtle: 'rgba(34, 197, 94, 0.14)',
   warning: '#f59e0b',
-  warningSubtle: 'rgba(245, 158, 11, 0.12)',
+  warningSubtle: 'rgba(245, 158, 11, 0.14)',
   danger: '#ef4444',
-  dangerSubtle: 'rgba(239, 68, 68, 0.12)',
-  info: '#6366f1',
-  infoSubtle: 'rgba(99, 102, 241, 0.12)',
+  dangerSubtle: 'rgba(239, 68, 68, 0.14)',
+  info: '#a78bfa',
+  infoSubtle: 'rgba(167, 139, 250, 0.14)',
 
-  bgDeep: '#0a0e1a',
-  bg: '#0f1320',
-  bgElevated: '#161b2e',
-  bgSurface: '#1c2237',
-  bgHover: '#232a42',
-  bgActive: '#2a3350',
+  bgDeep: '#09090b',
+  bg: '#0f0f12',
+  bgElevated: '#16161a',
+  bgSurface: '#1c1c21',
+  bgHover: '#25252b',
+  bgActive: '#2e2e36',
 
-  border: 'rgba(255, 255, 255, 0.06)',
-  borderSubtle: 'rgba(255, 255, 255, 0.03)',
-  borderFocus: 'rgba(59, 130, 246, 0.5)',
+  border: 'rgba(255, 255, 255, 0.08)',
+  borderSubtle: 'rgba(255, 255, 255, 0.05)',
+  borderFocus: 'rgba(0, 212, 170, 0.40)',
 
-  text: '#e8ecf4',
-  textSecondary: '#8892a8',
-  textTertiary: '#5a637a',
-  textInverse: '#0f1320',
+  text: '#ececf0',
+  textSecondary: '#a1a1aa',
+  textTertiary: '#63636e',
+  textInverse: '#09090b',
 
   glass: 'rgba(255, 255, 255, 0.03)',
-  glassBorder: 'rgba(255, 255, 255, 0.08)',
+  glassBorder: 'rgba(255, 255, 255, 0.07)',
 
-  shadowSm: '0 1px 3px rgba(0, 0, 0, 0.3)',
-  shadowMd: '0 4px 16px rgba(0, 0, 0, 0.4)',
-  shadowLg: '0 12px 40px rgba(0, 0, 0, 0.5)',
-  shadowGlow: '0 0 20px rgba(59, 130, 246, 0.15)',
+  shadowSm: '0 2px 8px rgba(0, 0, 0, 0.32)',
+  shadowMd: '0 8px 24px rgba(0, 0, 0, 0.44)',
+  shadowLg: '0 20px 48px rgba(0, 0, 0, 0.56)',
+  shadowGlow: '0 0 0 1px rgba(0, 212, 170, 0.08), 0 8px 32px rgba(0, 212, 170, 0.12)',
 };
 
-/** 亮色主题 */
+/** 亮色主题 — Warm Paper */
 export const lightTheme: ThemeTokens = {
-  primary: '#2563eb',
-  primaryHover: '#1d4ed8',
-  primarySubtle: 'rgba(37, 99, 235, 0.08)',
-  primaryGlow: 'rgba(37, 99, 235, 0.15)',
+  primary: '#0d9373',
+  primaryHover: '#0b7d62',
+  primarySubtle: 'rgba(13, 147, 115, 0.10)',
+  primaryGlow: 'rgba(13, 147, 115, 0.14)',
 
   success: '#16a34a',
-  successSubtle: 'rgba(22, 163, 74, 0.08)',
+  successSubtle: 'rgba(22, 163, 74, 0.10)',
   warning: '#d97706',
-  warningSubtle: 'rgba(217, 119, 6, 0.08)',
+  warningSubtle: 'rgba(217, 119, 6, 0.10)',
   danger: '#dc2626',
-  dangerSubtle: 'rgba(220, 38, 38, 0.08)',
-  info: '#4f46e5',
-  infoSubtle: 'rgba(79, 70, 229, 0.08)',
+  dangerSubtle: 'rgba(220, 38, 38, 0.10)',
+  info: '#7c3aed',
+  infoSubtle: 'rgba(124, 58, 237, 0.10)',
 
-  bgDeep: '#f5f5f7',
-  bg: '#ffffff',
+  bgDeep: '#f3f2ef',
+  bg: '#fafaf8',
   bgElevated: '#ffffff',
-  bgSurface: '#f9fafb',
-  bgHover: '#f3f4f6',
-  bgActive: '#e5e7eb',
+  bgSurface: '#f5f4f1',
+  bgHover: '#eeedea',
+  bgActive: '#e5e4e0',
 
-  border: 'rgba(0, 0, 0, 0.08)',
-  borderSubtle: 'rgba(0, 0, 0, 0.04)',
-  borderFocus: 'rgba(37, 99, 235, 0.5)',
+  border: 'rgba(28, 25, 23, 0.08)',
+  borderSubtle: 'rgba(28, 25, 23, 0.05)',
+  borderFocus: 'rgba(13, 147, 115, 0.36)',
 
-  text: '#111827',
-  textSecondary: '#6b7280',
-  textTertiary: '#9ca3af',
-  textInverse: '#ffffff',
+  text: '#1c1917',
+  textSecondary: '#57534e',
+  textTertiary: '#a8a29e',
+  textInverse: '#fafaf8',
 
-  glass: 'rgba(0, 0, 0, 0.02)',
-  glassBorder: 'rgba(0, 0, 0, 0.06)',
+  glass: 'rgba(255, 255, 255, 0.72)',
+  glassBorder: 'rgba(28, 25, 23, 0.08)',
 
-  shadowSm: '0 1px 2px rgba(0, 0, 0, 0.05)',
-  shadowMd: '0 4px 12px rgba(0, 0, 0, 0.08)',
-  shadowLg: '0 12px 32px rgba(0, 0, 0, 0.12)',
-  shadowGlow: '0 0 16px rgba(37, 99, 235, 0.1)',
+  shadowSm: '0 1px 3px rgba(28, 25, 23, 0.06)',
+  shadowMd: '0 4px 16px rgba(28, 25, 23, 0.08)',
+  shadowLg: '0 12px 40px rgba(28, 25, 23, 0.12)',
+  shadowGlow: '0 0 0 1px rgba(13, 147, 115, 0.06), 0 4px 20px rgba(13, 147, 115, 0.08)',
 };
 
-/** 不随主题变化的静态 token */
-export const staticTokens: StaticTokens = {
-  sidebarWidth: '260px',
-  sidebarCollapsed: '72px',
-  topbarHeight: '64px',
+/** 通用基础 token */
+export const foundationTokens: FoundationTokens = {
   radiusSm: '6px',
   radiusMd: '10px',
   radiusLg: '14px',
   radiusXl: '20px',
-  fontSans: "'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif",
-  fontMono: "'JetBrains Mono', 'SF Mono', monospace",
+  fontSans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  fontMono: "'JetBrains Mono', 'SF Mono', 'Cascadia Code', monospace",
   transition: '200ms cubic-bezier(0.4, 0, 0.2, 1)',
   transitionSlow: '400ms cubic-bezier(0.4, 0, 0.2, 1)',
+};
+
+/** 应用壳层 token */
+export const appShellTokens: AppShellTokens = {
+  sidebarWidth: '260px',
+  sidebarCollapsed: '72px',
+  topbarHeight: '64px',
+};
+
+/** 分组后的静态 token */
+export const staticTokenGroups: StaticTokenGroups = {
+  foundation: foundationTokens,
+  appShell: appShellTokens,
+};
+
+/** 不随主题变化的静态 token（向后兼容的扁平导出） */
+export const staticTokens: StaticTokens = {
+  ...foundationTokens,
+  ...appShellTokens,
 };
 
 /** 主题集合 */

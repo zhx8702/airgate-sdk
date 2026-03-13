@@ -46,7 +46,9 @@ type ExtensionGRPCPlugin struct {
 
 func (p *ExtensionGRPCPlugin) GRPCServer(_ *goplugin.GRPCBroker, s *grpc.Server) error {
 	pb.RegisterPluginServiceServer(s, &PluginGRPCServer{Impl: p.Impl})
-	pb.RegisterExtensionServiceServer(s, &ExtensionGRPCServer{Impl: p.Impl})
+	extServer := &ExtensionGRPCServer{Impl: p.Impl}
+	extServer.initRouter()
+	pb.RegisterExtensionServiceServer(s, extServer)
 	return nil
 }
 

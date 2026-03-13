@@ -418,15 +418,25 @@ FrontendWidgets: []sdk.FrontendWidget{
 },
 ```
 
-**Core 不做任何账号表单的默认渲染**，所有插件的账号管理 UI（添加表单、详情展示）统一由插件 Widget 提供。Core 只负责在对应插槽位置加载 Widget 组件：
+Core 拥有宿主页面、弹窗骨架、插槽位置、加载/降级生命周期；插件只负责填充自己声明的 Slot 内容。账号管理页的实际运行顺序应当是：
 
 ```text
 渲染账号管理页
+  → Core 渲染页面与 ModalSection 外壳
   → 根据当前插件，加载其声明的 Slot Widget
-  → Widget 内部自行处理表单、OAuth 授权等交互逻辑
+  → Widget 存在：插件接管 slot 内内容
+  → Widget 缺失但 schema 存在：Core 回退到 schema 驱动表单
+  → 两者都缺失：Core 显示 placeholder
 ```
 
-> `AccountTypes` 是元数据声明（告诉 Core 这个插件支持哪些账号类型的 key 和 label），用于筛选和列表展示，不用于渲染表单。
+> `AccountTypes` 是元数据声明（告诉 Core 这个插件支持哪些账号类型的 key 和 label），用于筛选和列表展示；真正的交互形态由 Widget 决定。插件如果不提供 Widget，Core 只能根据 schema 做保底表单，不能推断插件特有的 OAuth 引导、多步骤辅助面板等行为。
+
+#### 宿主边界（必须遵守）
+
+- **Core 拥有宿主骨架**：路由注册、导航入口、页面标题、弹窗外壳、区块层级、Footer 动作区、加载态与空态都由 Core 决定。
+- **Widget 只拥有 slot 内容**：嵌入型组件只能渲染插槽内部，不应假设自己控制整个页面、整个弹窗或宿主外层间距。
+- **插件前端契约保持最小化**：前端模块只暴露 `routes`、`menuItems`、`accountForm` 等显式入口；Core 负责加载、挂载、销毁与错误隔离。
+- **独立页面与嵌入组件分治**：`FrontendPages` 可以拥有页面主体内容；`FrontendWidgets` 只能拥有指定插槽。两者都必须服从 Core 的路由与运行时装配。
 
 ### 静态资源
 
@@ -526,6 +536,46 @@ const style = themeStyle({
 4. 用户切换主题时，所有使用 CSS 变量的组件（Core + 插件）自动跟随
 
 > 插件也可以继续手写 `var(--ag-primary, #3b82f6)` 格式，`cssVar()` 只是提供类型安全和自动 fallback 的便捷方式。
+
+#### 插件样式基础层 `@airgate/theme/plugin`
+
+对于嵌入 Core 的插件前端，推荐直接复用 `@airgate/theme/plugin` 提供的最小基础层，而不是每个插件都重新实现一套 scoped theme、样式注入和基础 primitives。
+
+```ts
+import {
+  ensurePluginStyleFoundation,
+  useScopedPluginTheme,
+  createPluginTailwindConfig,
+  Field,
+  TextInput,
+  Button,
+} from '@airgate/theme/plugin';
+```
+
+它解决的是插件开发里反复出现的四类问题：
+
+- **主题注入**：`ensurePluginStyleFoundation()` 负责把 token 变量和 plugin foundation CSS 注入到宿主文档。
+- **亮暗跟随**：`useScopedPluginTheme()` 让 widget 自动跟随宿主 `data-theme` 变化，而不是自己维护一份全局主题状态。
+- **Tailwind 桥接**：`createPluginTailwindConfig()` 为插件生成带 scope、prefix、token bridge 的配置，避免污染宿主样式。
+- **基础组件**：`Field` / `TextInput` / `TextArea` / `Button` / `Badge` / `Section` 等 primitives 统一使用共享 token，减少每个插件重复造轮子。
+
+#### 插件前端样式规范
+
+- **唯一 token 源**：颜色、阴影、圆角、字体统一来自 `@airgate/theme`，不要在插件里私自定义第二套语义 token。
+- **必须做作用域隔离**：插件根节点必须使用自己的 scope selector；Tailwind 必须配置 `important: scopeSelector` 与独立前缀，禁止污染宿主全局选择器。
+- **优先复用共享 primitives**：输入框、按钮、卡片、状态徽标、表单分区等通用元素优先复用 `@airgate/theme/plugin`，只有确实是领域组件时再在插件内部组合。
+- **不覆盖宿主骨架**：插件不要重写 Core Modal、Page、Sidebar、Header 的全局样式；slot 内部允许表达品牌和交互，但边界止于 slot。
+- **亮暗主题必须天然可用**：不要写死浅色背景或深色文字；所有前景/背景/边框都应通过 token 驱动，确保随宿主主题自动切换。
+- **把 Tailwind 当 recipe，不当真相**：插件可以用 Tailwind 组织布局，但最终视觉契约仍应落在共享 token 和 foundation class 上。
+
+#### 插件前端 PR Review Checklist
+
+- [ ] 颜色、阴影、圆角、字体是否全部来自 `@airgate/theme` token
+- [ ] Widget 是否只影响自己的 scope，而没有污染宿主全局样式
+- [ ] 是否优先复用了 `@airgate/theme/plugin` primitives，而不是重复造通用输入/按钮/卡片
+- [ ] 亮色 / 暗色下是否都可读、可用，且能跟随 Core 切换
+- [ ] 插件是否只接管 slot 内部内容，而没有假设自己拥有整个页面或弹窗骨架
+- [ ] 如果插件未提供 Widget，Core 的 schema fallback 是否仍然可以正常工作
 
 ## 目录结构
 

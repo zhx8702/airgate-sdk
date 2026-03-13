@@ -1,6 +1,6 @@
 // 入口模块
 
-import { API, setPluginInfo } from './utils.js';
+import { API, setPluginInfo, applyTheme, initTheme, toggleTheme } from './utils.js';
 import { loadScheduler, setPolicy, setPinned } from './scheduler.js';
 import { loadAccounts, editWeight, testAccount, deleteAccount } from './accounts.js';
 import { renderTypeCards, selectType, showForm, hideForm, saveAccount, editAccount } from './form.js';
@@ -24,6 +24,7 @@ function renderEndpoints(pluginInfo) {
 }
 
 async function init() {
+  initTheme();
   try {
     const res = await fetch(API + '/api/plugin/info');
     const info = await res.json();
@@ -58,6 +59,10 @@ document.getElementById('sched-pinned-select').addEventListener('change', (e) =>
 
 // 添加账号按钮
 document.getElementById('btn-add-account').addEventListener('click', () => showForm());
+
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  toggleTheme();
+});
 
 // 表单：取消 / 保存
 document.getElementById('btn-cancel').addEventListener('click', hideForm);

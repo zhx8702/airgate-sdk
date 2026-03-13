@@ -1,9 +1,12 @@
-import type { ThemeTokens, StaticTokens } from './types.js';
+import type { CssVarOptions, StaticTokens, ThemeTokens } from './types.js';
 import { darkTheme, staticTokens } from './tokens.js';
-import { tokenToCssVar, staticToCssVar } from './css.js';
+import { createStaticCssVarMap, createThemeCssVarMap } from './css.js';
 
 /** 所有可用 token 名称 */
 export type TokenName = keyof ThemeTokens | keyof StaticTokens;
+
+const defaultThemeCssVarMap = createThemeCssVarMap();
+const defaultStaticCssVarMap = createStaticCssVarMap();
 
 /**
  * 获取带 fallback 的 CSS var() 引用。
@@ -14,13 +17,16 @@ export type TokenName = keyof ThemeTokens | keyof StaticTokens;
  * cssVar('bgSurface')  // → 'var(--ag-bg-surface, #1c2237)'
  * cssVar('radiusMd')   // → 'var(--ag-radius-md, 10px)'
  */
-export function cssVar(token: TokenName): string {
-  if (token in tokenToCssVar) {
+export function cssVar(token: TokenName, options: CssVarOptions = {}): string {
+  const themeCssVarMap = options.prefix ? createThemeCssVarMap(options) : defaultThemeCssVarMap;
+  const staticCssVarMap = options.prefix ? createStaticCssVarMap(options) : defaultStaticCssVarMap;
+
+  if (token in themeCssVarMap) {
     const t = token as keyof ThemeTokens;
-    return `var(${tokenToCssVar[t]}, ${darkTheme[t]})`;
+    return `var(${themeCssVarMap[t]}, ${darkTheme[t]})`;
   }
   const s = token as keyof StaticTokens;
-  return `var(${staticToCssVar[s]}, ${staticTokens[s]})`;
+  return `var(${staticCssVarMap[s]}, ${staticTokens[s]})`;
 }
 
 /**
@@ -31,10 +37,11 @@ export function cssVar(token: TokenName): string {
  */
 export function themeStyle(
   mapping: Partial<Record<string, TokenName>>,
+  options: CssVarOptions = {},
 ): Record<string, string> {
   const result: Record<string, string> = {};
   for (const [cssProp, token] of Object.entries(mapping)) {
-    if (token) result[cssProp] = cssVar(token);
+    if (token) result[cssProp] = cssVar(token, options);
   }
   return result;
 }
