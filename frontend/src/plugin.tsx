@@ -43,7 +43,7 @@ export interface PluginTailwindConfigOptions {
 export type PluginStatusKind = 'info' | 'success' | 'error';
 
 export const pluginFoundationCssText = `
-/* ── Obsidian Terminal — Plugin Foundation ── */
+/* ── AirGate — Plugin Foundation ── */
 
 .agw-form-shell {
   display: flex;
@@ -245,12 +245,12 @@ export const pluginFoundationCssText = `
   border: 1px solid transparent;
   background: var(--ag-primary);
   color: var(--ag-text-inverse);
-  box-shadow: 0 0 16px var(--ag-primary-glow);
+  box-shadow: var(--ag-shadow-md);
 }
 
 .agw-button-primary:hover {
   background: var(--ag-primary-hover);
-  box-shadow: 0 0 24px var(--ag-primary-glow);
+  box-shadow: var(--ag-shadow-lg);
 }
 
 .agw-button-secondary {
@@ -318,6 +318,120 @@ export const pluginFoundationCssText = `
 .agw-selectable-card:disabled {
   cursor: not-allowed;
   opacity: 0.5;
+}
+
+/* ── 亮色主题：磨砂玻璃质感 ── */
+
+[data-theme="light"] .agw-input {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(180, 195, 220, 0.30);
+  box-shadow: 0 1px 2px rgba(100, 116, 160, 0.05) inset;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme="light"] .agw-input:focus,
+[data-theme="light"] .agw-input:focus-visible {
+  background: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="light"] .agw-card,
+[data-theme="light"] .agw-panel {
+  background: rgba(255, 255, 255, 0.30);
+  border-color: rgba(180, 195, 220, 0.25);
+  box-shadow:
+    0 2px 24px rgba(100, 116, 160, 0.07),
+    0 0.5px 0 rgba(255, 255, 255, 0.55) inset;
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+}
+
+[data-theme="light"] .agw-card:hover,
+[data-theme="light"] .agw-selectable-card:hover {
+  background: rgba(255, 255, 255, 0.42);
+  border-color: rgba(180, 195, 220, 0.35);
+}
+
+[data-theme="light"] .agw-status-inline {
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(180, 195, 220, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme="light"] .agw-button-secondary {
+  background: rgba(255, 255, 255, 0.38);
+  border-color: rgba(180, 195, 220, 0.30);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme="light"] .agw-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(180, 195, 220, 0.40);
+}
+
+/* ── Elevation: modal — 弹窗内撤销 glass morphism ──
+ * 弹窗背景不透明，glass 效果（backdrop-filter, 半透明 background, 投影）既无意义又浪费 GPU。
+ * 上面的基础规则使用硬编码 rgba/blur 值，无法通过 .ag-elevation-modal 的变量重定义级联覆盖，
+ * 因此这里需要显式：
+ *   1. backdrop-filter: none — 撤销模糊
+ *   2. box-shadow: none — 去掉多余投影
+ *   3. background / border-color 改为 var(--ag-*) 引用 — 让 elevation context 变量生效
+ */
+
+[data-theme="light"] .ag-elevation-modal .agw-input {
+  background: var(--ag-bg-surface);
+  border-color: var(--ag-border);
+  box-shadow: inset 0 1px 2px rgba(29, 39, 52, 0.04);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-theme="light"] .ag-elevation-modal .agw-input:focus,
+[data-theme="light"] .ag-elevation-modal .agw-input:focus-visible {
+  background: rgba(29, 39, 52, 0.02);
+  border-color: var(--ag-border-focus);
+  box-shadow: 0 0 0 3px var(--ag-primary-subtle);
+}
+
+[data-theme="light"] .ag-elevation-modal .agw-card,
+[data-theme="light"] .ag-elevation-modal .agw-panel {
+  background: var(--ag-bg-elevated);
+  border-color: var(--ag-glass-border);
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-theme="light"] .ag-elevation-modal .agw-card:hover,
+[data-theme="light"] .ag-elevation-modal .agw-selectable-card:hover {
+  background: var(--ag-bg-hover);
+  border-color: var(--ag-border);
+}
+
+[data-theme="light"] .ag-elevation-modal .agw-card-active {
+  background: var(--ag-primary-subtle);
+  border-color: var(--ag-border-focus);
+}
+
+[data-theme="light"] .ag-elevation-modal .agw-button-secondary {
+  background: rgba(255, 255, 255, 0.50);
+  border-color: var(--ag-glass-border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-theme="light"] .ag-elevation-modal .agw-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.70);
+  border-color: var(--ag-border);
+}
+
+[data-theme="light"] .ag-elevation-modal .agw-status-inline {
+  background: rgba(255, 255, 255, 0.40);
+  border-color: var(--ag-glass-border);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 `;
 

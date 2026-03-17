@@ -11,7 +11,7 @@ import type {
   ThemeStorageOptions,
   ThemeTokens,
 } from './types.js';
-import { appShellTokens, foundationTokens, themes, staticTokens } from './tokens.js';
+import { appShellTokens, foundationTokens, themes, staticTokens, lightElevationContexts } from './tokens.js';
 
 /** camelCase → kebab-case */
 function toKebab(key: string): string {
@@ -35,7 +35,7 @@ function selectorForScope(scopeSelector = ':root', themeAttribute = 'data-theme'
 }
 
 function varsBlock(
-  values: ThemeTokens | StaticTokens | FoundationTokens | AppShellTokens,
+  values: ThemeTokens | StaticTokens | FoundationTokens | AppShellTokens | Partial<ThemeTokens>,
   prefix: string,
 ): string {
   return Object.entries(values)
@@ -119,11 +119,20 @@ export function generateThemeCSS(options: ThemeCSSOptions = {}): string {
   const scopeSelector = options.scopeSelector || ':root';
   const themeAttribute = options.themeAttribute || 'data-theme';
 
-  return [
+  const blocks = [
     `${selectorForScope(scopeSelector)} {\n${varsBlock(staticTokens, prefix)}\n}`,
     `${selectorForScope(scopeSelector, themeAttribute, 'dark')} {\n${varsBlock(themes.dark, prefix)}\n}`,
     `${selectorForScope(scopeSelector, themeAttribute, 'light')} {\n${varsBlock(themes.light, prefix)}\n}`,
-  ].join('\n\n');
+  ];
+
+  // Elevation context blocks (light theme only)
+  const lightSelector = selectorForScope(scopeSelector, themeAttribute, 'light');
+  for (const [ctx, overrides] of Object.entries(lightElevationContexts)) {
+    if (Object.keys(overrides).length === 0) continue;
+    blocks.push(`${lightSelector} .ag-elevation-${ctx} {\n${varsBlock(overrides, prefix)}\n}`);
+  }
+
+  return blocks.join('\n\n');
 }
 
 /** 运行时注入主题 CSS 到 <head> */
