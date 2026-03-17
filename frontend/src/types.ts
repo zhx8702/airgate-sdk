@@ -105,3 +105,6 @@ export interface CssVarOptions {
 export interface TailwindBridgeOptions {
   prefix?: string;
 }
+
+/** Elevation context — UI 层级上下文，用于自动调整子组件的 token 值 */
+export type ElevationContext = 'modal' | 'dropdown';

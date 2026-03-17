@@ -2,6 +2,7 @@
 export type {
   AppShellTokens,
   CssVarOptions,
+  ElevationContext,
   FoundationTokens,
   StaticTokenGroups,
   StaticTokens,
@@ -19,6 +20,7 @@ export {
   appShellTokens,
   darkTheme,
   foundationTokens,
+  lightElevationContexts,
   lightTheme,
   staticTokenGroups,
   staticTokens,
