@@ -166,6 +166,7 @@ message ForwardResult {
     int64  retry_after_ms = 8;   // 限流时建议等待时间（毫秒）
     bytes  body = 9;             // 非流式响应体
     map<string, HeaderValues> headers = 10;  // 非流式响应头
+    map<string, string> updated_credentials = 11;  // 凭证更新（插件刷新 token 后回传）
 }
 
 message ForwardChunk {

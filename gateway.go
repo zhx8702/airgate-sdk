@@ -54,4 +54,7 @@ type ForwardResult struct {
 	// 非流式响应（Writer 不可用时通过此字段返回）
 	Body    []byte      // 响应体
 	Headers http.Header // 响应头
+
+	// 凭证更新（插件刷新 token 后回传，Core 负责持久化）
+	UpdatedCredentials map[string]string `json:"updated_credentials,omitempty"`
 }
